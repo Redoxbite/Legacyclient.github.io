@@ -3,7 +3,6 @@
   const header = document.querySelector(".site-header");
   const toggle = document.querySelector(".nav-toggle");
   const nav = document.getElementById("siteNav");
-  const canvas = document.getElementById("fireflies");
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   let targetX = window.innerWidth * 0.55;
@@ -51,39 +50,83 @@
 
   const modules = {
     combat: [
-      { name: "Auto Crystal", desc: "Place and break crystals", on: true },
-      { name: "Fast XP", desc: "Throw bottles without delay", on: true },
-      { name: "Auto Totem", desc: "Keep a totem in offhand", on: true },
-      { name: "Fast Place", desc: "Speed up block placement", on: false },
-      { name: "Double Anchor", desc: "Anchor placements stacked", on: false }
-    ],
-    render: [
-      { name: "Nametags", desc: "Clean tags through walls", on: true },
-      { name: "Motion Blur", desc: "Soft camera trail", on: true },
-      { name: "Custom Hotbar", desc: "Glass hotbar strip", on: true },
-      { name: "Radar", desc: "Nearby players on a disc", on: false },
-      { name: "Starlight", desc: "Night lighting pass", on: true }
-    ],
-    esp: [
-      { name: "Player ESP", desc: "Box and fill players", on: true },
-      { name: "Storage ESP", desc: "Chests and shulkers", on: true },
-      { name: "Hole ESP", desc: "Safe holes marked", on: false },
-      { name: "Base ESP", desc: "Stash and base hints", on: true },
-      { name: "Block Outline", desc: "Quiet block edges", on: false }
+      { name: "Auto Crystal", desc: "Hold right-click on obsidian to place and break crystals", on: true },
+      { name: "Auto Inventory Totem", desc: "Fills missing totems in hotbar slot and/or offhand when inventory opens", on: true },
+      { name: "Cpvp Macro", desc: "After placing obsidian/anchor, switch, charge, and explode", on: false },
+      { name: "Double Anchor", desc: "Charge, explode, replace, and repeat on the same spot", on: false },
+      { name: "FastPlace", desc: "Places blocks super fast", on: false },
+      { name: "FastXP", desc: "Throws XP bottles super fast", on: true },
+      { name: "Walksy's Crystal Optimiser", desc: "Faster crystal place/break timing (Walksy)", on: true }
     ],
     movement: [
-      { name: "Sprint", desc: "Hold sprint for you", on: true },
-      { name: "NoSlow", desc: "Move while using items", on: true },
-      { name: "Jump Reset", desc: "Reset sprint on jump", on: false },
-      { name: "Phase", desc: "Slip through tight spots", on: false },
-      { name: "Boat Fly", desc: "Boat movement assist", on: false }
+      { name: "Boat Fly", desc: "Fly while riding a boat", on: false },
+      { name: "Flight", desc: "Fly in survival — horizontal movement with space/sneak for up/down", on: false },
+      { name: "JumpReset", desc: "Automatically jumps when taking damage to reduce knockback", on: false },
+      { name: "NoPush", desc: "Disables pushing from entities and water", on: false },
+      { name: "NoSlow", desc: "Removes slowdown from using items", on: true },
+      { name: "Phase", desc: "Walk through blocks (no collision)", on: false },
+      { name: "Sprint", desc: "Automatically holds the sprint state", on: true }
+    ],
+    render: [
+      { name: "Block Outline", desc: "3D corner outline on the block you look at", on: false },
+      { name: "Free Cam", desc: "Detach camera — WASD flies the cam; your body keeps falling/moving naturally", on: false },
+      { name: "Free Look", desc: "Toggle 360° orbit camera around your body while keeping full control", on: false },
+      { name: "TNTTimer", desc: "Thin smoked-glass fuse countdown cards", on: true },
+      { name: "World", desc: "World lighting, custom time and gamma", on: true }
+    ],
+    visuals: [
+      { name: "Arrows", desc: "Directional indicators for nearby players", on: true },
+      { name: "Base Hunting", desc: "Low-detail blocks & clear water — pick how flat", on: false },
+      { name: "Fake Pay", desc: "Blocks /pay and shows a fake receipt", on: false },
+      { name: "Fake Roles", desc: "Donut-style tab and nametag roles (LT3 | name)", on: false },
+      { name: "Fake Scoreboard", desc: "Fake custom sidebar scoreboard", on: false },
+      { name: "Fake Spawner", desc: "Yellow glass looks like a spawner", on: false },
+      { name: "Hit Animations", desc: "Chosen emoji bursts off hits, then drops and bounces", on: true },
+      { name: "Motion Blur", desc: "Blurs the whole scene while looking around", on: true },
+      { name: "Projectile Prediction", desc: "Predicts and displays projectile flight paths & landing spots", on: false },
+      { name: "Projectile Trails", desc: "3D volumetric glowing projectile trails and HUD tracker", on: true },
+      { name: "Starlight", desc: "Deep-space night sky with distant stars and meteors", on: true },
+      { name: "Swing Speed", desc: "Visual main-hand swing speed (0.1x–5x), no mid-swing reset", on: false },
+      { name: "Target Frame", desc: "Spinning corner frame when hovering a player", on: false }
+    ],
+    hud: [
+      { name: "ArrayList", desc: "Compact movable module list with keybind tags", on: true },
+      { name: "Crosshair", desc: "Custom HUD crosshair (disabled)", on: false },
+      { name: "Custom Hotbar", desc: "Black smoked-glass hotbar matching vanilla proportions", on: true },
+      { name: "Hud", desc: "HUD elements, chrome theme and layout", on: true },
+      { name: "Keystrokes", desc: "WASD, LMB/RMB and spacebar overlay", on: false },
+      { name: "MineProgress", desc: "Smooth HUD indicator displaying block with expanding radial circle", on: false },
+      { name: "Radar", desc: "Square smoked-glass nearby-player radar", on: false },
+      { name: "Region Map", desc: "DonutSMP region map with your location", on: false },
+      { name: "Scanning", desc: "Radar-style Activity Scanner status HUD", on: false },
+      { name: "Spotify", desc: "Compact Spotify now-playing card", on: false }
+    ],
+    esp: [
+      { name: "Base ESP", desc: "Highlights chunks with deep storage clusters", on: true },
+      { name: "Block ESP", desc: "Filled ESP for selected blocks with hairline tracers", on: false },
+      { name: "Hole ESP", desc: "Highlights 1x1 and 1x3 vertical shafts with top-down shading", on: false },
+      { name: "Nametags", desc: "Compact tags for players, animals and dropped items", on: true },
+      { name: "Player ESP", desc: "Corner brackets and tracers on other players", on: true },
+      { name: "Storage ESP", desc: "Legacy storage ESP with no-depth boxes and tracers", on: true }
     ],
     donut: [
-      { name: "Base Locate", desc: "Donut stash locator", on: true },
-      { name: "Chunk Finder", desc: "Scan loaded chunks", on: true },
-      { name: "Player Debug", desc: "Track nearby players", on: false },
-      { name: "Home Reset", desc: "Reset home state", on: false },
-      { name: "Auto Log", desc: "Leave on danger", on: true }
+      { name: "Auto Kick", desc: "Disconnect at or below a Y level, or when you press Kick", on: false },
+      { name: "Auto Log Donut", desc: "Disconnect when another player is detected", on: true },
+      { name: "Base Locate", desc: "Flags new underground mobs you never saw from the surface and highlights their chunk", on: true },
+      { name: "Chunk Bypass V2", desc: "Finds player-activity / stash chunks and highlights them at sea level.", on: false },
+      { name: "Home Reset", desc: "Deletes then sets a home slot so it matches your current position", on: false },
+      { name: "Legacy Amethyst Finder", desc: "Heat-map of grown amethyst activity chunks with animated visual scanning", on: true },
+      { name: "Legacy Chunk Finder", desc: "Finds hive, vine, and seagrass activity chunks", on: true },
+      { name: "Legacy Debug", desc: "Highlights geode-like chunks and deep chest clusters", on: false },
+      { name: "Legacy Player Debug", desc: "Flags player-occupied chunks from sky-light update leaks, not first-load cave darkness", on: false },
+      { name: "Spawner Notifier", desc: "Filled ESP and tracers on spawners from Y -64 to 128", on: false },
+      { name: "Sus Chunk Finder", desc: "Nova-style sus chunk heat map", on: false }
+    ],
+    client: [
+      { name: "Fake Player", desc: "Damageable clone that copies your armor and hands", on: false },
+      { name: "FPS", desc: "Trade visual quality for frames — Low / Lower / Lowest", on: false },
+      { name: "GUI", desc: "ClickGUI and HUD Classic / Chrome / Black style", on: true },
+      { name: "Quick Chat", desc: "Keybound chat messages and commands", on: false }
     ]
   };
 
@@ -106,10 +149,13 @@
       const name = document.createElement("span");
       name.className = "gui__item-name";
       name.textContent = mod.name;
-      const desc = document.createElement("span");
-      desc.className = "gui__item-desc";
-      desc.textContent = mod.desc;
-      copy.append(name, desc);
+      copy.append(name);
+      if (mod.desc) {
+        const desc = document.createElement("span");
+        desc.className = "gui__item-desc";
+        desc.textContent = mod.desc;
+        copy.append(desc);
+      }
 
       const sw = document.createElement("span");
       sw.className = "gui__switch";
@@ -138,78 +184,14 @@
 
   const cloud = document.getElementById("moduleCloud");
   if (cloud) {
-    const names = [
-      "Auto Crystal", "Player ESP", "Storage ESP", "Base Locate", "Chunk Finder",
-      "Nametags", "Motion Blur", "FreeCam", "Starlight", "Hole ESP",
-      "Sprint", "NoSlow", "Fast XP", "Hud Arraylist", "Keystrokes",
-      "Radar", "Target Frame", "Home Reset", "Sus Chunk", "Fps Boost"
-    ];
-    names.forEach(function (name) {
-      const chip = document.createElement("span");
-      chip.className = "chip";
-      chip.textContent = name;
-      cloud.append(chip);
+    Object.keys(modules).forEach(function (key) {
+      modules[key].forEach(function (mod) {
+        const chip = document.createElement("span");
+        chip.className = "chip";
+        chip.textContent = mod.name;
+        cloud.append(chip);
+      });
     });
-  }
-
-  if (canvas && canvas.getContext) {
-    const ctx = canvas.getContext("2d");
-    const flies = [];
-    let width = 0;
-    let height = 0;
-
-    function resize() {
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
-    }
-
-    function seed() {
-      flies.length = 0;
-      const count = Math.min(70, Math.floor((width * height) / 18000));
-      for (let i = 0; i < count; i++) {
-        flies.push({
-          x: Math.random() * width,
-          y: Math.random() * height * 0.75 + height * 0.15,
-          r: Math.random() * 1.6 + 0.4,
-          s: Math.random() * 0.35 + 0.08,
-          phase: Math.random() * Math.PI * 2
-        });
-      }
-    }
-
-    function draw(time) {
-      ctx.clearRect(0, 0, width, height);
-      for (const fly of flies) {
-        fly.phase += 0.02;
-        fly.x += Math.cos(fly.phase) * fly.s;
-        fly.y += Math.sin(fly.phase * 0.8) * fly.s * 0.6;
-        if (fly.x < 0) fly.x = width;
-        if (fly.x > width) fly.x = 0;
-        if (fly.y < 0) fly.y = height;
-        if (fly.y > height) fly.y = 0;
-
-        const dx = fly.x - lightX;
-        const dy = fly.y - lightY;
-        const near = Math.max(0, 1 - Math.hypot(dx, dy) / 280);
-        const alpha = 0.12 + near * 0.8 + Math.sin(time * 0.004 + fly.phase) * 0.12;
-
-        ctx.beginPath();
-        ctx.arc(fly.x, fly.y, fly.r + near * 1.4, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(232, 223, 200, " + Math.max(0.08, alpha) + ")";
-        ctx.fill();
-      }
-      requestAnimationFrame(draw);
-    }
-
-    resize();
-    seed();
-    window.addEventListener("resize", function () {
-      resize();
-      seed();
-    });
-    if (!reduceMotion) {
-      requestAnimationFrame(draw);
-    }
   }
 
   const form = document.getElementById("contactForm");

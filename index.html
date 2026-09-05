@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Legacy Client — a smoked-glass Fabric utility client for Minecraft 1.21.11. Dark forest atmosphere, glassy GUI, and GitHub Pages edge protection.">
-  <meta name="theme-color" content="#050705">
+  <meta name="description" content="Legacy Client — a smoked-glass Fabric utility client for Minecraft 1.21.11. Black glass GUI, cursor light, and GitHub Pages edge protection.">
+  <meta name="theme-color" content="#000000">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
   <meta property="og:title" content="Legacy Client">
-  <meta property="og:description" content="Smoked-glass Fabric client. Dark forest. Built for GitHub Pages.">
+  <meta property="og:description" content="Smoked-glass Fabric client. Black canvas, cursor light. Built for GitHub Pages.">
   <meta property="og:type" content="website">
   <title>Legacy Client</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
@@ -22,14 +22,7 @@
   <a class="skip-link" href="#home">Skip to content</a>
 
   <div class="scene" aria-hidden="true">
-    <div class="scene__moon"></div>
-    <div class="scene__fog scene__fog--back"></div>
-    <div class="scene__forest"></div>
-    <div class="scene__forest scene__forest--lit"></div>
     <div class="scene__light"></div>
-    <canvas class="scene__fireflies" id="fireflies"></canvas>
-    <div class="scene__fog scene__fog--front"></div>
-    <div class="scene__vignette"></div>
   </div>
 
   <header class="site-header glass" id="top">
@@ -62,8 +55,8 @@
           <p class="hero__eyebrow">Fabric · Minecraft 1.21.11 · V1</p>
           <h1 class="hero__title">Legacy<span>Client</span></h1>
           <p class="hero__copy">
-            A smoked-glass utility client with a dark-forest atmosphere. Move the cursor
-            and the trees wake up. The GUI stays quiet, frosted, and close to the in-game menu.
+            A smoked-glass utility client on a black canvas. Move the cursor and the light follows.
+            The GUI matches the in-game menu from Legacy 1.0.1-camfix.
           </p>
           <div class="hero__actions">
             <a class="btn btn--primary" href="#download">Get Legacy</a>
@@ -71,7 +64,7 @@
           </div>
           <div class="hero__stats">
             <div class="stat glass">
-              <span class="stat__value">50+</span>
+              <span class="stat__value">63</span>
               <span class="stat__label">Modules</span>
             </div>
             <div class="stat glass">
@@ -96,10 +89,13 @@
           <div class="gui__body">
             <div class="gui__cats" role="tablist" aria-label="Module categories">
               <button class="gui__cat is-active" type="button" data-cat="combat">Combat</button>
-              <button class="gui__cat" type="button" data-cat="render">Render</button>
-              <button class="gui__cat" type="button" data-cat="esp">ESP</button>
               <button class="gui__cat" type="button" data-cat="movement">Move</button>
+              <button class="gui__cat" type="button" data-cat="render">Render</button>
+              <button class="gui__cat" type="button" data-cat="visuals">Visuals</button>
+              <button class="gui__cat" type="button" data-cat="hud">HUD</button>
+              <button class="gui__cat" type="button" data-cat="esp">ESP</button>
               <button class="gui__cat" type="button" data-cat="donut">Donut</button>
+              <button class="gui__cat" type="button" data-cat="client">Client</button>
             </div>
             <div class="gui__list" id="guiList" role="tabpanel"></div>
           </div>
@@ -119,27 +115,27 @@
           <article class="feature-card glass">
             <div class="feature-card__icon">C</div>
             <h3>Combat</h3>
-            <p>Auto Crystal, Fast XP, totem handling, and placement tools kept in one glass column.</p>
+            <p>Auto Crystal, FastXP, Cpvp Macro, Double Anchor, and Walksy's Crystal Optimiser.</p>
           </article>
           <article class="feature-card glass">
             <div class="feature-card__icon">R</div>
             <h3>Render &amp; HUD</h3>
-            <p>Nametags, radar, motion blur, keystrokes, and a custom hotbar that stays readable at night.</p>
+            <p>Hud, ArrayList, Custom Hotbar, Radar, Region Map, Spotify, and Keystrokes.</p>
           </article>
           <article class="feature-card glass">
             <div class="feature-card__icon">E</div>
             <h3>ESP</h3>
-            <p>Players, storage, holes, bases, and block outlines with the same frosted overlay language.</p>
+            <p>Player ESP, Storage ESP, Base ESP, Hole ESP, Block ESP, and Nametags.</p>
           </article>
           <article class="feature-card glass">
             <div class="feature-card__icon">M</div>
             <h3>Movement</h3>
-            <p>Sprint, NoSlow, phase, boat fly, and jump reset without a noisy settings dump.</p>
+            <p>Sprint, NoSlow, NoPush, JumpReset, Phase, Flight, and Boat Fly.</p>
           </article>
           <article class="feature-card glass">
             <div class="feature-card__icon">D</div>
             <h3>Donut tools</h3>
-            <p>Base locate, chunk finders, player debug, home reset, and session guards for Donut SMP.</p>
+            <p>Base Locate, Legacy Chunk Finder, Amethyst Finder, Player Debug, Sus Chunk, and Home Reset.</p>
           </article>
           <article class="feature-card glass">
             <div class="feature-card__icon">G</div>
@@ -194,7 +190,7 @@
             <h2 class="section__title">Legacy for Fabric 1.21.11</h2>
             <p class="section__intro">Drop the jar into your mods folder with Fabric Loader 0.19+ and Fabric API.</p>
             <div class="download-panel__meta">
-              <p class="download-panel__row"><span>Build</span><span>1.0.1</span></p>
+              <p class="download-panel__row"><span>Build</span><span>1.0.1-camfix</span></p>
               <p class="download-panel__row"><span>Loader</span><span>Fabric</span></p>
               <p class="download-panel__row"><span>Game</span><span>Minecraft 1.21.11</span></p>
               <p class="download-panel__row"><span>Host</span><span>GitHub Pages</span></p>
@@ -215,7 +211,7 @@
       <div class="container contact-grid">
         <div>
           <p class="section__label">Contact</p>
-          <h2 class="section__title">Stay in the forest</h2>
+          <h2 class="section__title">Stay in the dark</h2>
           <p class="section__intro">
             Questions about builds, hosting, or the glass theme. Messages open your mail client
             after a short local rate limit.
