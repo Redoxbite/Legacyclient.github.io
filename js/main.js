@@ -229,4 +229,188 @@
       form.reset();
     });
   }
+
+  const USERS_KEY = "legacy-users";
+  const SESSION_KEY = "legacy-session";
+  const dialog = document.getElementById("authDialog");
+  const loginForm = document.getElementById("loginForm");
+  const registerForm = document.getElementById("registerForm");
+  const authNote = document.getElementById("authNote");
+  const authHeading = document.getElementById("authHeading");
+  const authUser = document.getElementById("authUser");
+  const authLogout = document.getElementById("authLogout");
+  const heroAuth = document.getElementById("heroAuth");
+
+  function readUsers() {
+    try {
+      const raw = window.localStorage.getItem(USERS_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (err) {
+      return [];
+    }
+  }
+
+  function writeUsers(users) {
+    window.localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  }
+
+  function currentUser() {
+    return window.localStorage.getItem(SESSION_KEY) || "";
+  }
+
+  function setSession(username) {
+    if (username) {
+      window.localStorage.setItem(SESSION_KEY, username);
+    } else {
+      window.localStorage.removeItem(SESSION_KEY);
+    }
+    syncAuthUi();
+  }
+
+  function syncAuthUi() {
+    const user = currentUser();
+    const guests = document.querySelectorAll("[data-auth-guest]");
+    guests.forEach(function (el) {
+      el.hidden = Boolean(user);
+    });
+    if (heroAuth) {
+      heroAuth.hidden = Boolean(user);
+    }
+    if (authUser) {
+      authUser.hidden = !user;
+      authUser.textContent = user ? user : "";
+    }
+    if (authLogout) {
+      authLogout.hidden = !user;
+    }
+  }
+
+  async function hashPass(password) {
+    const bytes = new TextEncoder().encode(password);
+    const digest = await window.crypto.subtle.digest("SHA-256", bytes);
+    return Array.from(new Uint8Array(digest)).map(function (b) {
+      return b.toString(16).padStart(2, "0");
+    }).join("");
+  }
+
+  function showAuthNote(text) {
+    if (!authNote) {
+      return;
+    }
+    authNote.hidden = false;
+    authNote.textContent = text;
+  }
+
+  function setAuthMode(mode) {
+    const isLogin = mode === "login";
+    if (loginForm) {
+      loginForm.hidden = !isLogin;
+    }
+    if (registerForm) {
+      registerForm.hidden = isLogin;
+    }
+    if (authHeading) {
+      authHeading.textContent = isLogin ? "Log In" : "Register";
+    }
+    document.querySelectorAll("[data-auth-tab]").forEach(function (tab) {
+      tab.classList.toggle("is-active", tab.getAttribute("data-auth-tab") === mode);
+    });
+    if (authNote) {
+      authNote.hidden = true;
+      authNote.textContent = "";
+    }
+  }
+
+  function openAuth(mode) {
+    setAuthMode(mode === "register" ? "register" : "login");
+    if (dialog && typeof dialog.showModal === "function") {
+      if (!dialog.open) {
+        dialog.showModal();
+      }
+    }
+  }
+
+  document.querySelectorAll("[data-auth-open]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      openAuth(button.getAttribute("data-auth-open"));
+    });
+  });
+
+  document.querySelectorAll("[data-auth-tab]").forEach(function (tab) {
+    tab.addEventListener("click", function () {
+      setAuthMode(tab.getAttribute("data-auth-tab"));
+    });
+  });
+
+  const closeBtn = document.querySelector(".auth__close");
+  if (closeBtn && dialog) {
+    closeBtn.addEventListener("click", function () {
+      dialog.close();
+    });
+  }
+
+  if (loginForm) {
+    loginForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      const username = document.getElementById("loginUser").value.trim().toLowerCase();
+      const password = document.getElementById("loginPass").value;
+      hashPass(password).then(function (hash) {
+        const match = readUsers().find(function (entry) {
+          return entry.username === username && entry.hash === hash;
+        });
+        if (!match) {
+          showAuthNote("Wrong username or password.");
+          return;
+        }
+        setSession(match.username);
+        loginForm.reset();
+        if (dialog) {
+          dialog.close();
+        }
+      });
+    });
+  }
+
+  if (registerForm) {
+    registerForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      const username = document.getElementById("registerUser").value.trim().toLowerCase();
+      const password = document.getElementById("registerPass").value;
+      const confirm = document.getElementById("registerPass2").value;
+      if (!/^[a-z0-9_]{3,24}$/.test(username)) {
+        showAuthNote("Use 3–24 letters, numbers, or underscores.");
+        return;
+      }
+      if (password !== confirm) {
+        showAuthNote("Passwords do not match.");
+        return;
+      }
+      const users = readUsers();
+      if (users.some(function (entry) {
+        return entry.username === username;
+      })) {
+        showAuthNote("That username is taken.");
+        return;
+      }
+      hashPass(password).then(function (hash) {
+        users.push({ username: username, hash: hash });
+        writeUsers(users);
+        setSession(username);
+        registerForm.reset();
+        if (dialog) {
+          dialog.close();
+        }
+      });
+    });
+  }
+
+  if (authLogout) {
+    authLogout.addEventListener("click", function () {
+      setSession("");
+    });
+  }
+
+  setAuthMode("login");
+  syncAuthUi();
 })();

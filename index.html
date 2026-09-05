@@ -36,12 +36,13 @@
         <span class="shield__dot"></span>
         Protected
       </span>
+      <p class="site-header__user" id="authUser" hidden></p>
+      <button class="btn btn--ghost site-header__logout" id="authLogout" type="button" hidden>Log Out</button>
       <nav class="site-nav" id="siteNav" aria-label="Primary">
         <a class="site-nav__link" href="#features">Features</a>
         <a class="site-nav__link" href="#gui">GUI</a>
-        <a class="site-nav__link" href="#protection">Protection</a>
-        <a class="site-nav__link" href="#download">Download</a>
-        <a class="site-nav__link" href="#contact">Contact</a>
+        <button class="site-nav__link" type="button" data-auth-open="register" data-auth-guest>Register</button>
+        <button class="site-nav__link" type="button" data-auth-open="login" data-auth-guest>Log In</button>
       </nav>
       <button class="nav-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="siteNav">
         <span></span><span></span><span></span>
@@ -60,23 +61,9 @@
             A smoked-glass utility client on a black canvas. Move the cursor and the light follows.
             The GUI matches the in-game menu from Legacy 1.0.1-camfix.
           </p>
-          <div class="hero__actions">
-            <a class="btn btn--primary" href="#download">Get Legacy</a>
-            <a class="btn btn--ghost" href="#gui">Open the glass GUI</a>
-          </div>
-          <div class="hero__stats">
-            <div class="stat glass">
-              <span class="stat__value">63</span>
-              <span class="stat__label">Modules</span>
-            </div>
-            <div class="stat glass">
-              <span class="stat__value">1.21.11</span>
-              <span class="stat__label">Minecraft</span>
-            </div>
-            <div class="stat glass">
-              <span class="stat__value">CDN</span>
-              <span class="stat__label">Edge shield</span>
-            </div>
+          <div class="hero__actions" id="heroAuth">
+            <button class="btn btn--primary" type="button" data-auth-open="register">Register</button>
+            <button class="btn btn--ghost" type="button" data-auth-open="login">Log In</button>
           </div>
         </div>
 
@@ -244,6 +231,33 @@
       </div>
     </div>
   </footer>
+
+  <dialog class="auth glass" id="authDialog" aria-labelledby="authTitle">
+    <button class="auth__close" type="button" aria-label="Close">&times;</button>
+    <p class="section__label" id="authTitle">Account</p>
+    <h2 class="auth__heading" id="authHeading">Log In</h2>
+    <div class="auth__tabs">
+      <button class="auth__tab" type="button" data-auth-tab="login">Log In</button>
+      <button class="auth__tab" type="button" data-auth-tab="register">Register</button>
+    </div>
+    <form class="auth__form" id="loginForm">
+      <label class="visually-hidden" for="loginUser">Username</label>
+      <input class="contact__field" id="loginUser" name="username" type="text" placeholder="Username" required minlength="3" maxlength="24" autocomplete="username">
+      <label class="visually-hidden" for="loginPass">Password</label>
+      <input class="contact__field" id="loginPass" name="password" type="password" placeholder="Password" required minlength="6" maxlength="80" autocomplete="current-password">
+      <button class="btn btn--primary btn--full" type="submit">Log In</button>
+    </form>
+    <form class="auth__form" id="registerForm" hidden>
+      <label class="visually-hidden" for="registerUser">Username</label>
+      <input class="contact__field" id="registerUser" name="username" type="text" placeholder="Username" required minlength="3" maxlength="24" autocomplete="username">
+      <label class="visually-hidden" for="registerPass">Password</label>
+      <input class="contact__field" id="registerPass" name="password" type="password" placeholder="Password" required minlength="6" maxlength="80" autocomplete="new-password">
+      <label class="visually-hidden" for="registerPass2">Confirm password</label>
+      <input class="contact__field" id="registerPass2" name="confirm" type="password" placeholder="Confirm password" required minlength="6" maxlength="80" autocomplete="new-password">
+      <button class="btn btn--primary btn--full" type="submit">Register</button>
+    </form>
+    <p class="contact__note" id="authNote" hidden></p>
+  </dialog>
 
   <script src="js/main.js"></script>
 </body>
