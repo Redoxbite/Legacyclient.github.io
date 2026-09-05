@@ -1274,7 +1274,7 @@
       zoomDialog.close();
     });
     zoomDialog.addEventListener("click", function (event) {
-      if (event.target === zoomDialog) {
+      if (event.target === zoomDialog || event.target === zoomPicture) {
         zoomDialog.close();
       }
     });

@@ -915,8 +915,7 @@ main {
   text-align: center;
 }
 
-.post-view,
-.zoom {
+.post-view {
   color: var(--text);
   background: var(--bg);
   border: 1px solid var(--stroke);
@@ -1170,22 +1169,40 @@ main {
 }
 
 .zoom {
-  position: relative;
-  z-index: 120;
-  width: min(72rem, 96vw);
-  max-height: 96vh;
-  padding: 2.4rem 1.2rem 1.2rem;
-  border-radius: var(--radius-lg);
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: #000000;
+  box-shadow: none;
+}
+
+.zoom::backdrop {
+  background: #000000;
+}
+
+.zoom .auth__close {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 2;
+  color: #ffffff;
 }
 
 .zoom__picture {
   display: block;
-  width: auto;
-  max-width: 100%;
-  max-height: 88vh;
-  margin: 0 auto;
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
   object-fit: contain;
-  cursor: zoom-in;
+  cursor: zoom-out;
 }
 
 .ctx[hidden] {
