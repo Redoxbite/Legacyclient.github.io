@@ -163,11 +163,7 @@
   }
 
   function redirectUri() {
-    const path = window.location.pathname
-      .replace(/index\.html$/i, "")
-      .replace(/auth\.html$/i, "");
-    const withSlash = path.endsWith("/") ? path : path + "/";
-    return window.location.origin + withSlash + "auth.html";
+    return cfg.redirectUri || "https://redoxbite.github.io/Legacyclient.github.io/auth.html";
   }
 
   function randomState() {
