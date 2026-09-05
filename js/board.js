@@ -783,18 +783,13 @@
   }
 
   function syncEditPicture() {
-    const packs = editCategory && editCategory.value === "packs";
     if (editPackPreview) {
-      editPackPreview.hidden = !packs;
+      editPackPreview.hidden = false;
     }
   }
 
   function showEditPicture(file) {
-    if (!editPreviewImg || !file) {
-      return;
-    }
-    editPreviewImg.hidden = false;
-    editPreviewImg.src = URL.createObjectURL(file);
+    showFittedShot(editPreviewImg, editPackPreview, file);
   }
 
   function openEdit(post) {
@@ -821,9 +816,15 @@
       if (post.preview) {
         editPreviewImg.hidden = false;
         editPreviewImg.src = post.preview;
+        if (editPackPreview) {
+          editPackPreview.classList.add("is-shot");
+        }
       } else {
         editPreviewImg.hidden = true;
         editPreviewImg.removeAttribute("src");
+        if (editPackPreview) {
+          editPackPreview.classList.remove("is-shot");
+        }
       }
     }
     if (editNote) {
@@ -1264,30 +1265,60 @@
   }
 
   function previewThumb(file) {
-    return new Promise(function (resolve, reject) {
+    return new Promise(function (resolve) {
+      if (!file) {
+        resolve("");
+        return;
+      }
       const image = new Image();
       const url = URL.createObjectURL(file);
       image.onload = function () {
+        const targetW = 1280;
+        const targetH = 720;
         const canvas = document.createElement("canvas");
-        const max = 640;
-        let width = image.width;
-        let height = image.height;
-        if (width > max || height > max) {
-          const scale = max / Math.max(width, height);
-          width = Math.round(width * scale);
-          height = Math.round(height * scale);
+        canvas.width = targetW;
+        canvas.height = targetH;
+        const srcRatio = image.width / Math.max(image.height, 1);
+        const dstRatio = targetW / targetH;
+        let sx = 0;
+        let sy = 0;
+        let sw = image.width;
+        let sh = image.height;
+        if (srcRatio > dstRatio) {
+          sw = image.height * dstRatio;
+          sx = (image.width - sw) / 2;
+        } else {
+          sh = image.width / dstRatio;
+          sy = (image.height - sh) / 2;
         }
-        canvas.width = width;
-        canvas.height = height;
-        canvas.getContext("2d").drawImage(image, 0, 0, width, height);
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#000000";
+        ctx.fillRect(0, 0, targetW, targetH);
+        ctx.drawImage(image, sx, sy, sw, sh, 0, 0, targetW, targetH);
         URL.revokeObjectURL(url);
-        resolve(canvas.toDataURL("image/jpeg", 0.82));
+        resolve(canvas.toDataURL("image/jpeg", 0.86));
       };
       image.onerror = function () {
         URL.revokeObjectURL(url);
         resolve("");
       };
       image.src = url;
+    });
+  }
+
+  function showFittedShot(imgEl, zoneEl, file) {
+    if (!imgEl || !file) {
+      return;
+    }
+    previewThumb(file).then(function (dataUrl) {
+      if (!dataUrl) {
+        return;
+      }
+      imgEl.hidden = false;
+      imgEl.src = dataUrl;
+      if (zoneEl) {
+        zoneEl.classList.add("is-shot");
+      }
     });
   }
 
@@ -1302,11 +1333,7 @@
   }
 
   function showPackPicture(file) {
-    if (!submitPreviewImg || !file) {
-      return;
-    }
-    submitPreviewImg.hidden = false;
-    submitPreviewImg.src = URL.createObjectURL(file);
+    showFittedShot(submitPreviewImg, packPreview, file);
   }
 
   function clearPackPicture() {
@@ -1317,15 +1344,14 @@
       submitPreviewImg.hidden = true;
       submitPreviewImg.removeAttribute("src");
     }
+    if (packPreview) {
+      packPreview.classList.remove("is-shot");
+    }
   }
 
   function syncPackPreview() {
-    const packs = submitCategory && submitCategory.value === "packs";
     if (packPreview) {
-      packPreview.hidden = !packs;
-    }
-    if (!packs) {
-      clearPackPicture();
+      packPreview.hidden = false;
     }
   }
 
@@ -1390,7 +1416,7 @@
       }
       if (category === "packs" && !isImageFile(picture)) {
         submitNote.hidden = false;
-        submitNote.textContent = "Drag a pack picture first.";
+        submitNote.textContent = "Drop a screenshot first.";
         return;
       }
       submitNote.hidden = false;

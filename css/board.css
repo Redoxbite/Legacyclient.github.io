@@ -32,6 +32,7 @@
   --chip-bg: #0b0b0d;
   --dl-bg: #161618;
   --icon-bg: #1c1c20;
+  --shot-ratio: 16 / 9;
   --space-4: 1rem;
   --space-5: 1.5rem;
   --space-6: 2rem;
@@ -537,7 +538,7 @@ main {
 
 .post-card__media {
   position: relative;
-  aspect-ratio: 16 / 10;
+  aspect-ratio: var(--shot-ratio);
   background: var(--tile-media);
 }
 
@@ -717,10 +718,29 @@ main {
 }
 
 .dropzone__image {
-  width: min(100%, 16rem);
-  max-height: 10rem;
-  object-fit: contain;
+  width: min(100%, 22rem);
+  max-height: 12.5rem;
+  aspect-ratio: var(--shot-ratio);
+  object-fit: cover;
   border-radius: 0.5rem;
+}
+
+.dropzone.is-shot {
+  padding: 0.7rem;
+}
+
+.dropzone.is-shot .dropzone__label,
+.dropzone.is-shot .dropzone__hint {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+.dropzone.is-shot .dropzone__image {
+  width: 100%;
+  max-height: none;
 }
 
 
@@ -947,10 +967,13 @@ main {
 
 .desk__media {
   position: relative;
+  display: block;
+  width: 100%;
   appearance: none;
   border: 0;
   padding: 0;
   overflow: hidden;
+  aspect-ratio: var(--shot-ratio);
   border: 1px solid var(--stroke);
   border-radius: var(--radius-lg);
   background: var(--tile-media);
@@ -978,9 +1001,8 @@ main {
 
 .desk__picture {
   width: 100%;
-  min-height: 16rem;
-  max-height: 34rem;
-  object-fit: contain;
+  height: 100%;
+  object-fit: cover;
   background: var(--tile-media);
 }
 
