@@ -1,9 +1,9 @@
 (function () {
-  const OWNER_ID = "1498332364487786616";
-  const DISCORD_CLIENT_ID = "";
-  const HOOK = "https://discord.com/api/webhooks/1536092355881468066/" +
-    "i9ju0MXg9T6OEmosK8EPv0exq-9wvfN21iDT50CxRs9PIfdYcL-pkMkjC1N1p3EE0IUE";
-  const SESSION_KEY = "legacy-session";
+  const cfg = window.LEGACY || {};
+  const OWNER_ID = cfg.ownerId || "";
+  const DISCORD_CLIENT_ID = cfg.clientId || "";
+  const HOOK = cfg.hook || "";
+  const SESSION_KEY = cfg.sessionKey || "legacy-session";
   const POSTS_KEY = "legacy-posts";
   const MAX_BYTES = 8 * 1024 * 1024;
   const LABELS = {
@@ -140,11 +140,9 @@
 
   const dialog = document.getElementById("authDialog");
   const authNote = document.getElementById("authNote");
-  const authIp = document.getElementById("authIp");
-  const STATE_KEY = "legacy-oauth-state";
-  const IP_KEY = "legacy-ip";
-  let detectedIp = "";
-  let ipLookup = null;
+  const STATE_KEY = cfg.stateKey || "legacy-oauth-state";
+  let verifyPopup = null;
+  let verifyTimer = 0;
 
   function showAuthNote(text) {
     if (!authNote) {
@@ -154,101 +152,10 @@
     authNote.textContent = text;
   }
 
-  function cachedIp() {
-    try {
-      return window.sessionStorage.getItem(IP_KEY) || "";
-    } catch (err) {
-      return "";
-    }
-  }
-
-  function setDetectedIp(ip) {
-    if (!ip) {
-      return;
-    }
-    detectedIp = ip;
-    try {
-      window.sessionStorage.setItem(IP_KEY, ip);
-    } catch (err) {}
-    if (authIp) {
-      authIp.textContent = ip;
-    }
-  }
-
-  function showIpNow() {
-    const ip = detectedIp || cachedIp();
-    if (!authIp) {
-      return ip;
-    }
-    authIp.textContent = ip || "Checking…";
-    return ip;
-  }
-
-  function fetchIpText(url, ms) {
-    const ctrl = new AbortController();
-    const timer = window.setTimeout(function () {
-      ctrl.abort();
-    }, ms);
-    return fetch(url, { signal: ctrl.signal, cache: "no-store" }).then(function (response) {
-      window.clearTimeout(timer);
-      if (!response.ok) {
-        throw new Error("ip");
-      }
-      return response.text();
-    }).finally(function () {
-      window.clearTimeout(timer);
-    });
-  }
-
-  function lookupIp() {
-    if (detectedIp) {
-      return Promise.resolve(detectedIp);
-    }
-    const cached = cachedIp();
-    if (cached) {
-      detectedIp = cached;
-      return Promise.resolve(cached);
-    }
-    if (ipLookup) {
-      return ipLookup;
-    }
-    ipLookup = fetchIpText("https://api.ipify.org", 1500).then(function (text) {
-      const ip = String(text || "").trim();
-      if (!ip || ip.length > 45) {
-        throw new Error("ip");
-      }
-      setDetectedIp(ip);
-      return ip;
-    }).catch(function () {
-      ipLookup = null;
-      throw new Error("ip");
-    });
-    return ipLookup;
-  }
-
-  function prefetchIp() {
-    const cached = cachedIp();
-    if (cached) {
-      setDetectedIp(cached);
-    }
-    lookupIp().catch(function () {
-      if (!detectedIp && authIp && authIp.textContent === "Checking…") {
-        authIp.textContent = "unknown";
-      }
-    });
-  }
-
   function openAuth() {
     if (authNote) {
       authNote.hidden = true;
       authNote.textContent = "";
-    }
-    if (!showIpNow()) {
-      lookupIp().catch(function () {
-        if (authIp) {
-          authIp.textContent = "unknown";
-        }
-      });
     }
     if (dialog && typeof dialog.showModal === "function" && !dialog.open) {
       dialog.showModal();
@@ -256,9 +163,11 @@
   }
 
   function redirectUri() {
-    const path = window.location.pathname.replace(/index\.html$/i, "");
+    const path = window.location.pathname
+      .replace(/index\.html$/i, "")
+      .replace(/auth\.html$/i, "");
     const withSlash = path.endsWith("/") ? path : path + "/";
-    return window.location.origin + withSlash;
+    return window.location.origin + withSlash + "auth.html";
   }
 
   function randomState() {
@@ -269,106 +178,63 @@
     }).join("");
   }
 
-  function oauthHashParams() {
-    const hash = (window.location.hash || "").replace(/^#/, "");
-    if (hash.indexOf("access_token=") === -1) {
-      return null;
-    }
-    return new URLSearchParams(hash);
-  }
-
   function closeAuth() {
     if (dialog && dialog.open) {
       dialog.close();
     }
   }
 
-  function startDiscordVerify() {
-    if (!DISCORD_CLIENT_ID) {
-      showAuthNote("Add the Legacy Bot Discord application ID to finish verify.");
-      return;
+  function stopVerifyWatch() {
+    if (verifyTimer) {
+      window.clearInterval(verifyTimer);
+      verifyTimer = 0;
     }
+    verifyPopup = null;
+  }
+
+  function onVerified() {
+    stopVerifyWatch();
+    closeAuth();
+    syncAuthUi();
+    renderPosts();
+  }
+
+  function discordAuthUrl() {
     const state = randomState();
-    window.sessionStorage.setItem(STATE_KEY, state);
-    const url = "https://discord.com/oauth2/authorize" +
+    window.localStorage.setItem(STATE_KEY, state);
+    return "https://discord.com/oauth2/authorize" +
       "?client_id=" + encodeURIComponent(DISCORD_CLIENT_ID) +
       "&redirect_uri=" + encodeURIComponent(redirectUri()) +
       "&response_type=token" +
       "&scope=identify" +
       "&prompt=consent" +
       "&state=" + encodeURIComponent(state);
-    window.location.assign(url);
   }
 
-  async function notifyVerify(user, ip) {
-    const body = new FormData();
-    body.append("payload_json", JSON.stringify({
-      username: "Legacy Bot",
-      embeds: [{
-        title: "IP linked to Discord",
-        color: 15066597,
-        fields: [
-          { name: "Discord", value: user.username || "unknown", inline: true },
-          { name: "Discord ID", value: user.id || "unknown", inline: true },
-          { name: "IP", value: ip || "unknown", inline: true }
-        ]
-      }]
-    }));
-    const response = await fetch(HOOK, { method: "POST", body: body });
-    if (!response.ok && response.type !== "opaque") {
-      throw new Error("send failed");
+  function startDiscordVerify() {
+    if (!DISCORD_CLIENT_ID) {
+      showAuthNote("Create a Discord app named Legacy Bot and add its Application ID.");
+      return;
     }
-  }
-
-  async function finishDiscordVerify(token, state) {
-    const expected = window.sessionStorage.getItem(STATE_KEY);
-    window.sessionStorage.removeItem(STATE_KEY);
-    if (!expected || state !== expected) {
-      throw new Error("state");
+    const url = discordAuthUrl();
+    stopVerifyWatch();
+    verifyPopup = window.open(
+      url,
+      "legacyDiscordVerify",
+      "width=520,height=800,menubar=no,toolbar=no,status=no"
+    );
+    if (!verifyPopup) {
+      window.location.assign(url);
+      return;
     }
-    const meResponse = await fetch("https://discord.com/api/users/@me", {
-      headers: { Authorization: "Bearer " + token }
-    });
-    if (!meResponse.ok) {
-      throw new Error("discord");
-    }
-    const user = await meResponse.json();
-    const ip = detectedIp || cachedIp() || "unknown";
-    await notifyVerify(user, ip);
-    setSession({
-      username: user.username,
-      discordId: user.id,
-      ip: ip
-    });
-  }
-
-  function clearOauthReturn() {
-    const url = new URL(window.location.href);
-    url.hash = "";
-    url.searchParams.delete("error");
-    url.searchParams.delete("error_description");
-    window.history.replaceState({}, document.title, url.pathname + url.search);
-  }
-
-  function handleOauthReturn() {
-    const err = new URLSearchParams(window.location.search).get("error");
-    if (err) {
-      clearOauthReturn();
-      openAuth();
-      showAuthNote("Discord verify was cancelled.");
-      return Promise.resolve();
-    }
-    const params = oauthHashParams();
-    if (!params) {
-      return Promise.resolve();
-    }
-    const token = params.get("access_token");
-    const state = params.get("state");
-    clearOauthReturn();
-    return finishDiscordVerify(token, state).catch(function () {
-      openAuth();
-      showAuthNote("Could not link Discord to this IP.");
-    });
+    verifyTimer = window.setInterval(function () {
+      if (verifyPopup && verifyPopup.closed) {
+        stopVerifyWatch();
+        if (currentSession()) {
+          onVerified();
+        }
+      }
+    }, 400);
   }
 
   document.querySelectorAll("[data-auth-open]").forEach(function (button) {
@@ -388,6 +254,27 @@
   if (verifyBtn) {
     verifyBtn.addEventListener("click", startDiscordVerify);
   }
+
+  window.addEventListener("message", function (event) {
+    if (event.origin !== window.location.origin) {
+      return;
+    }
+    if (!event.data || event.data.source !== "legacy-bot") {
+      return;
+    }
+    if (event.data.ok) {
+      onVerified();
+    } else {
+      stopVerifyWatch();
+      showAuthNote("Discord verify was cancelled.");
+    }
+  });
+
+  window.addEventListener("storage", function (event) {
+    if (event.key === SESSION_KEY && event.newValue) {
+      onVerified();
+    }
+  });
 
   const authLogout = document.getElementById("authLogout");
   if (authLogout) {
@@ -667,9 +554,6 @@
     });
   }
 
-  prefetchIp();
-  handleOauthReturn().then(function () {
-    syncAuthUi();
-    renderPosts();
-  });
+  syncAuthUi();
+  renderPosts();
 })();

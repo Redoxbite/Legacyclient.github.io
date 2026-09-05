@@ -673,30 +673,6 @@ main {
   max-width: 20rem;
 }
 
-.auth__ip {
-  margin: 0 0 1rem;
-  padding: 0.85rem 1rem;
-  border-radius: 0.55rem;
-  background: #0a0a0c;
-  border: 1px solid #2f2f35;
-  text-align: center;
-}
-
-.auth__ip-label {
-  color: var(--muted);
-  font-size: 0.72rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.auth__ip-value {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-weight: 800;
-  font-size: 1.15rem;
-  margin-top: 0.2rem;
-}
-
 .auth__actions {
   display: grid;
   grid-template-columns: 1fr 1.35fr;
