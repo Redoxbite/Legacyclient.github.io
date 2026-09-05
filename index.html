@@ -18,7 +18,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,600;1,700;1,800;1,900&family=Inter:ital,wght@0,400;0,500;0,600;1,700&display=swap" rel="stylesheet">
   <meta http-equiv="Cache-Control" content="no-store">
-  <link rel="stylesheet" href="css/board.css?v=desk10">
+  <link rel="stylesheet" href="css/board.css?v=desk11">
 </head>
 <body>
   <a class="skip-link" href="#home">Skip to content</a>
@@ -65,23 +65,6 @@
 
       <section class="section" id="browse">
         <div class="container">
-          <div class="filters" role="tablist" aria-label="Filters">
-            <button class="chip chip--btn is-on" type="button" data-filter="all">All</button>
-            <button class="chip chip--btn" type="button" data-filter="scammers">Scammers</button>
-            <button class="chip chip--btn" type="button" data-filter="packs">Texture packs</button>
-            <button class="chip chip--btn" type="button" data-filter="other">Other</button>
-          </div>
-          <div class="filters filters--pack" id="packFilters" hidden role="tablist" aria-label="Texture pack types">
-            <button class="chip chip--btn is-on" type="button" data-pack-type="">All packs</button>
-            <button class="chip chip--btn" type="button" data-pack-type="sky">Sky texture packs</button>
-            <button class="chip chip--btn" type="button" data-pack-type="pvp">PvP packs</button>
-            <button class="chip chip--btn" type="button" data-pack-type="custom">Custom packs</button>
-          </div>
-          <label class="search">
-            <span class="visually-hidden">Search</span>
-            <input class="contact__field" id="searchInput" type="search" placeholder="Search">
-          </label>
-
           <p class="section__label">Categories</p>
           <h2 class="section__title">Open a board</h2>
           <div class="cat-grid">
@@ -108,6 +91,12 @@
         <div class="container">
           <p class="section__label">Latest</p>
           <h2 class="section__title" id="listTitle">All posts</h2>
+          <div class="filters filters--pack" id="packFilters" hidden role="tablist" aria-label="Texture pack types">
+            <button class="chip chip--btn is-on" type="button" data-pack-type="">All packs</button>
+            <button class="chip chip--btn" type="button" data-pack-type="sky">Sky texture packs</button>
+            <button class="chip chip--btn" type="button" data-pack-type="pvp">PvP packs</button>
+            <button class="chip chip--btn" type="button" data-pack-type="custom">Custom packs</button>
+          </div>
           <div class="post-list" id="postList"></div>
         </div>
       </section>
@@ -310,8 +299,8 @@
     </form>
   </dialog>
 
-  <script src="js/config.js?v=desk10"></script>
-  <script src="js/cloud.js?v=desk10"></script>
-  <script src="js/board.js?v=desk10"></script>
+  <script src="js/config.js?v=desk11"></script>
+  <script src="js/cloud.js?v=desk11"></script>
+  <script src="js/board.js?v=desk11"></script>
 </body>
 </html>

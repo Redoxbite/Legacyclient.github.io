@@ -1574,7 +1574,7 @@
   function renderPosts() {
     const list = document.getElementById("postList");
     const ownerList = document.getElementById("ownerPostList");
-    const search = (document.getElementById("searchInput") || {}).value || "";
+    const search = "";
     const query = search.trim().toLowerCase();
     const board = parseBoardHash();
     const filter = board.filter;
@@ -1642,21 +1642,11 @@
     fill(list);
     fill(ownerList);
 
-    document.querySelectorAll("[data-filter]").forEach(function (btn) {
-      btn.classList.toggle("is-on", btn.getAttribute("data-filter") === filter);
-    });
     document.querySelectorAll("[data-pack-type]").forEach(function (btn) {
       const kind = btn.getAttribute("data-pack-type") || "";
       btn.classList.toggle("is-on", kind === packType);
     });
   }
-
-  document.querySelectorAll("[data-filter]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      const key = btn.getAttribute("data-filter");
-      window.location.hash = key === "all" ? "home" : key;
-    });
-  });
 
   document.querySelectorAll("[data-pack-type]").forEach(function (btn) {
     btn.addEventListener("click", function () {
@@ -1664,11 +1654,6 @@
       window.location.hash = kind ? "packs-" + kind : "packs";
     });
   });
-
-  const searchInput = document.getElementById("searchInput");
-  if (searchInput) {
-    searchInput.addEventListener("input", renderPosts);
-  }
 
   window.addEventListener("hashchange", function () {
     const hash = window.location.hash.replace("#", "");
