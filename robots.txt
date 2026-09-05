@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /404.html
 
-Sitemap: https://redoxbite.github.io/Legacyclient.github.io/sitemap.xml
+Sitemap: https://legacy-client.github.io/sitemap.xml

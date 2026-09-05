@@ -218,7 +218,7 @@
   }
 
   function redirectUri() {
-    return cfg.redirectUri || "https://redoxbite.github.io/Legacyclient.github.io/auth.html";
+    return cfg.redirectUri || "https://legacy-client.github.io/auth.html";
   }
 
   function randomState() {

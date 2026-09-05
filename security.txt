@@ -1,3 +1,3 @@
 Contact: mailto:hello@legacyclient.dev
 Preferred-Languages: en
-Canonical: https://redoxbite.github.io/Legacyclient.github.io/security.txt
+Canonical: https://legacy-client.github.io/security.txt
