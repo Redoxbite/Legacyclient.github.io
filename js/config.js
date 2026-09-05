@@ -6,5 +6,9 @@ window.LEGACY = {
     "i9ju0MXg9T6OEmosK8EPv0exq-9wvfN21iDT50CxRs9PIfdYcL-pkMkjC1N1p3EE0IUE",
   sessionKey: "legacy-session",
   stateKey: "legacy-oauth-state",
-  verifierKey: "legacy-oauth-verifier"
+  verifierKey: "legacy-oauth-verifier",
+  githubOwner: "Redoxbite",
+  githubRepo: "Legacyclient.github.io",
+  githubBranch: "main",
+  tokenKey: "legacy-github-token"
 };

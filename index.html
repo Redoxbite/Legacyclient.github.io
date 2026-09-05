@@ -6,7 +6,7 @@
   <meta name="description" content="Legacy Client — scammers, texture packs, and file drops.">
   <meta name="theme-color" content="#000000">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://discord.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://raw.githubusercontent.com; connect-src 'self' https://discord.com https://api.github.com https://raw.githubusercontent.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
   <meta property="og:title" content="Legacy Client">
   <meta property="og:description" content="Scammers, texture packs, and file drops.">
   <meta property="og:type" content="website">
@@ -18,7 +18,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,600;1,700;1,800;1,900&family=Inter:ital,wght@0,400;0,500;0,600;1,700&display=swap" rel="stylesheet">
   <meta http-equiv="Cache-Control" content="no-store">
-  <link rel="stylesheet" href="css/board.css?v=desk5">
+  <link rel="stylesheet" href="css/board.css?v=desk6">
 </head>
 <body>
   <a class="skip-link" href="#home">Skip to content</a>
@@ -110,7 +110,16 @@
         <div class="container">
           <p class="section__label">Submit</p>
           <h2 class="section__title">Send a file</h2>
-          <p class="section__intro">Owner only. Pick scammers, texture packs, or other, then publish the file.</p>
+          <p class="section__intro">Owner only. Publish a file so everyone who opens the site can see it.</p>
+          <div class="publish-key" id="publishKeyBox">
+            <label class="visually-hidden" for="githubToken">GitHub token</label>
+            <input class="contact__field" id="githubToken" type="password" placeholder="GitHub token" autocomplete="off">
+            <button class="btn btn--ghost" type="button" id="saveGithubToken">Save token</button>
+            <p class="contact__note" id="githubTokenNote">
+              <a href="https://github.com/settings/tokens/new?scopes=public_repo&amp;description=Legacy%20Client%20publish" target="_blank" rel="noopener">Create a GitHub token</a>
+              with Contents write, paste it here, then publish. It stays on this device.
+            </p>
+          </div>
           <form class="submit-form glass" id="submitForm">
             <label class="visually-hidden" for="submitTitle">Title</label>
             <input class="contact__field" id="submitTitle" name="title" type="text" placeholder="Title" required maxlength="80">
@@ -281,6 +290,7 @@
   </dialog>
 
   <script src="js/config.js"></script>
-  <script src="js/board.js?v=desk5"></script>
+  <script src="js/cloud.js?v=desk6"></script>
+  <script src="js/board.js?v=desk6"></script>
 </body>
 </html>

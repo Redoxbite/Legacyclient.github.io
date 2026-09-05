@@ -153,6 +153,165 @@
     writeJson(POSTS_KEY, posts);
   }
 
+  let remotePosts = [];
+  let remoteReady = false;
+
+  function readLocalPosts() {
+    const posts = readJson(POSTS_KEY, []);
+    return Array.isArray(posts) ? posts : [];
+  }
+
+  function cloud() {
+    return window.LEGACY_CLOUD || null;
+  }
+
+  function previewSrc(post) {
+    const preview = post && post.preview;
+    if (!preview) {
+      return "assets/logo.png";
+    }
+    if (preview.indexOf("data:") === 0 || preview.indexOf("blob:") === 0 ||
+        preview.indexOf("http") === 0 || preview.indexOf("assets/") === 0) {
+      return preview;
+    }
+    return cloud() ? cloud().publicUrl(preview) : preview;
+  }
+
+  function publicFilePath(post, entry) {
+    if (entry && entry.path) {
+      return entry.path;
+    }
+    if (post && post.filePath && (!entry || entry.id === "main")) {
+      return post.filePath;
+    }
+    return "";
+  }
+
+  function slimPost(post) {
+    const copy = {
+      id: post.id,
+      title: post.title,
+      description: post.description,
+      category: post.category,
+      fileName: post.fileName,
+      fileSize: post.fileSize,
+      filePath: post.filePath || "",
+      preview: post.preview,
+      createdAt: post.createdAt,
+      downloads: post.downloads || 0,
+      files: postFiles(post).map(function (entry) {
+        return {
+          id: entry.id,
+          name: entry.name,
+          size: entry.size || 0,
+          path: entry.path || "",
+          downloads: entry.downloads || 0
+        };
+      })
+    };
+    if (copy.preview && copy.preview.indexOf("data:") === 0) {
+      copy.preview = cloud().filePath(post.id, "preview.jpg");
+    }
+    return copy;
+  }
+
+  function publishPostToCloud(post, blobs) {
+    const api = cloud();
+    if (!api || !api.hasToken()) {
+      return Promise.reject(new Error("Add a GitHub token to publish for everyone."));
+    }
+    const published = slimPost(post);
+    const jobs = [];
+    if (post.preview && post.preview.indexOf("data:") === 0) {
+      const previewPath = api.filePath(post.id, "preview.jpg");
+      published.preview = previewPath;
+      jobs.push(api.uploadBlob(previewPath, dataUrlToFile(post.preview, "preview.jpg"), "Add preview for " + post.title));
+    }
+    (blobs || []).forEach(function (item) {
+      if (!item || !item.blob) {
+        return;
+      }
+      const path = api.filePath(post.id, safeFileName(item.name, "file.bin"));
+      published.files = published.files.map(function (entry) {
+        if (entry.id === item.id) {
+          return Object.assign({}, entry, { path: path });
+        }
+        return entry;
+      });
+      if (item.id === "main") {
+        published.filePath = path;
+      }
+      jobs.push(api.uploadBlob(path, item.blob, "Add file for " + post.title));
+    });
+    return Promise.all(jobs).then(function () {
+      return api.loadPosts().then(function (list) {
+        const next = list.filter(function (entry) {
+          return entry.id !== published.id;
+        });
+        next.push(published);
+        next.sort(function (a, b) {
+          return (b.createdAt || 0) - (a.createdAt || 0);
+        });
+        return api.savePosts(next, "Publish " + published.title).then(function () {
+          remotePosts = next;
+          remoteReady = true;
+          return published;
+        });
+      });
+    });
+  }
+
+  function unpublishPostFromCloud(post) {
+    const api = cloud();
+    if (!api || !api.hasToken()) {
+      return Promise.resolve();
+    }
+    const paths = [];
+    if (post.preview && post.preview.indexOf("data:") !== 0 && post.preview.indexOf("http") !== 0) {
+      paths.push(post.preview);
+    }
+    postFiles(post).forEach(function (entry) {
+      if (entry.path) {
+        paths.push(entry.path);
+      }
+    });
+    if (post.filePath) {
+      paths.push(post.filePath);
+    }
+    const unique = paths.filter(function (path, index) {
+      return paths.indexOf(path) === index;
+    });
+    return Promise.all(unique.map(function (path) {
+      return api.deleteFile(path, "Remove file for " + (post.title || "post")).catch(function () {
+        return null;
+      });
+    })).then(function () {
+      return api.loadPosts().then(function (list) {
+        const next = list.filter(function (entry) {
+          return entry.id !== post.id;
+        });
+        return api.savePosts(next, "Remove " + (post.title || "post")).then(function () {
+          remotePosts = next;
+          remoteReady = true;
+        });
+      });
+    });
+  }
+
+  function pullRemotePosts() {
+    const api = cloud();
+    if (!api) {
+      remoteReady = true;
+      renderPosts();
+      return Promise.resolve();
+    }
+    return api.loadPosts().then(function (posts) {
+      remotePosts = posts;
+      remoteReady = true;
+      renderPosts();
+    });
+  }
+
   function fileKey(postId, fileId) {
     return !fileId || fileId === "main" ? postId : postId + "::" + fileId;
   }
@@ -455,8 +614,23 @@
   }
 
   function readPosts() {
-    const posts = readJson(POSTS_KEY, []);
-    return Array.isArray(posts) ? posts : [];
+    if (!remoteReady) {
+      return readLocalPosts();
+    }
+    const byId = {};
+    remotePosts.forEach(function (post) {
+      byId[post.id] = post;
+    });
+    if (isOwner()) {
+      readLocalPosts().forEach(function (post) {
+        if (!byId[post.id]) {
+          byId[post.id] = post;
+        }
+      });
+    }
+    return Object.keys(byId).map(function (id) {
+      return byId[id];
+    });
   }
 
   function categoryLabel(key) {
@@ -489,7 +663,7 @@
     media.className = "post-card__media";
     const picture = document.createElement("img");
     picture.className = "post-card__picture";
-    picture.src = post.preview || "assets/logo.png";
+    picture.src = previewSrc(post);
     picture.alt = "";
     const chip = document.createElement("span");
     chip.className = "post-card__chip";
@@ -658,17 +832,11 @@
   }
 
   function downloadPostFile(post, entry, meta) {
-    loadPostFile(fileKey(post.id, entry.id)).then(function (record) {
-      if (!record || !record.blob) {
-        if (meta) {
-          meta.textContent = "File is not saved on this device";
-        }
-        return;
-      }
-      const url = URL.createObjectURL(record.blob);
+    function saveBlob(blob, name) {
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = record.name || entry.name || "download";
+      link.download = name || entry.name || "download";
       document.body.append(link);
       link.click();
       link.remove();
@@ -676,6 +844,39 @@
         URL.revokeObjectURL(url);
       }, 1000);
       bumpDownloads(post, entry.id);
+    }
+
+    loadPostFile(fileKey(post.id, entry.id)).then(function (record) {
+      if (record && record.blob) {
+        saveBlob(record.blob, record.name || entry.name);
+        return;
+      }
+      const path = publicFilePath(post, entry);
+      const api = cloud();
+      if (!path || !api) {
+        if (meta) {
+          meta.textContent = "File is not saved on this device";
+        }
+        return;
+      }
+      if (meta) {
+        meta.textContent = "Downloading…";
+      }
+      fetch(api.publicUrl(path), { cache: "no-store" }).then(function (res) {
+        if (!res.ok) {
+          throw new Error("missing");
+        }
+        return res.blob();
+      }).then(function (blob) {
+        saveBlob(blob, entry.name);
+        if (meta) {
+          meta.textContent = fileMetaLine(Object.assign({}, entry, { size: blob.size }));
+        }
+      }).catch(function () {
+        if (meta) {
+          meta.textContent = "File is not saved on this device";
+        }
+      });
     });
   }
 
@@ -683,7 +884,7 @@
     activePost = post;
     const hasPreview = Boolean(post.preview);
     if (postViewPicture) {
-      postViewPicture.src = post.preview || "assets/logo.png";
+      postViewPicture.src = previewSrc(post);
       postViewPicture.hidden = false;
     }
     if (postViewHint) {
@@ -721,7 +922,7 @@
     if (!activePost || !activePost.preview || !zoomPicture) {
       return;
     }
-    zoomPicture.src = activePost.preview;
+    zoomPicture.src = previewSrc(activePost);
     if (zoomDialog && typeof zoomDialog.showModal === "function" && !zoomDialog.open) {
       zoomDialog.showModal();
     }
@@ -815,7 +1016,7 @@
     if (editPreviewImg) {
       if (post.preview) {
         editPreviewImg.hidden = false;
-        editPreviewImg.src = post.preview;
+        editPreviewImg.src = previewSrc(post);
         if (editPackPreview) {
           editPackPreview.classList.add("is-shot");
         }
@@ -838,7 +1039,7 @@
   }
 
   function removePost(post) {
-    const posts = readPosts().filter(function (entry) {
+    const posts = readLocalPosts().filter(function (entry) {
       return entry.id !== post.id;
     });
     savePosts(posts);
@@ -848,10 +1049,14 @@
         deletePostFile(fileKey(post.id, entry.id));
       }
     });
-    if (postPage && !postPage.hidden && activePost && activePost.id === post.id) {
-      closePost(false);
-    }
-    renderPosts();
+    unpublishPostFromCloud(post).catch(function () {
+      return null;
+    }).then(function () {
+      if (postPage && !postPage.hidden && activePost && activePost.id === post.id) {
+        closePost(false);
+      }
+      renderPosts();
+    });
   }
 
   if (postEdit) {
@@ -969,6 +1174,7 @@
         category: editCategory.value,
         fileName: editPost.fileName,
         fileSize: editPost.fileSize,
+        filePath: editPost.filePath,
         preview: editPost.preview,
         createdAt: editPost.createdAt,
         downloads: editPost.downloads || 0,
@@ -1043,6 +1249,21 @@
             imageName: imageName
           }, attach).catch(function () {
             return null;
+          });
+          const blobs = [];
+          if (newFile) {
+            blobs.push({ id: "main", name: newFile.name, blob: newFile });
+          }
+          extraFiles.forEach(function (file, index) {
+            const entry = next.files[next.files.length - extraFiles.length + index];
+            blobs.push({ id: entry.id, name: file.name, blob: file });
+          });
+          return publishPostToCloud(next, blobs).catch(function (err) {
+            if (editNote) {
+              editNote.hidden = false;
+              editNote.textContent = (err && err.message) || "Saved on this device only.";
+            }
+            return next;
           });
         });
       }).then(function () {
@@ -1493,14 +1714,27 @@
           });
         });
       }).then(function () {
-        const posts = readPosts();
+        const posts = readLocalPosts();
         posts.push(post);
         writeJson(POSTS_KEY, posts);
-        submitForm.reset();
-        clearPackPicture();
-        syncPackPreview();
-        submitNote.textContent = "Published to " + categoryLabel(category) + ".";
-        renderPosts();
+        return publishPostToCloud(post, [{
+          id: "main",
+          name: file.name,
+          blob: file
+        }]).then(function () {
+          submitForm.reset();
+          clearPackPicture();
+          syncPackPreview();
+          submitNote.textContent = "Published for everyone on " + categoryLabel(category) + ".";
+          renderPosts();
+        }).catch(function (err) {
+          submitForm.reset();
+          clearPackPicture();
+          syncPackPreview();
+          submitNote.textContent = (err && err.message) ||
+            "Saved on this device only. Add a GitHub token to publish for everyone.";
+          renderPosts();
+        });
       }).catch(function () {
         submitNote.textContent = "Could not send. Try again.";
       });
@@ -1555,12 +1789,23 @@
         }, file).catch(function () {
           return null;
         });
-        const posts = readPosts();
+        const posts = readLocalPosts();
         posts.push(post);
         writeJson(POSTS_KEY, posts);
-        importForm.reset();
-        importNote.textContent = "Published to " + categoryLabel(category) + ".";
-        renderPosts();
+        return publishPostToCloud(post, [{
+          id: "main",
+          name: file.name,
+          blob: file
+        }]).then(function () {
+          importForm.reset();
+          importNote.textContent = "Published for everyone on " + categoryLabel(category) + ".";
+          renderPosts();
+        }).catch(function (err) {
+          importForm.reset();
+          importNote.textContent = (err && err.message) ||
+            "Saved on this device only. Add a GitHub token to publish for everyone.";
+          renderPosts();
+        });
       }).catch(function () {
         importNote.textContent = "Could not send the file.";
       });
@@ -1568,14 +1813,58 @@
   }
 
   syncAuthUi();
-  renderPosts();
-  const startId = postIdFromHash();
-  if (startId) {
-    const startPost = readPosts().filter(function (entry) {
-      return entry.id === startId;
-    })[0];
-    if (startPost) {
-      openPost(startPost, true);
+
+  const githubToken = document.getElementById("githubToken");
+  const saveGithubToken = document.getElementById("saveGithubToken");
+  const githubTokenNote = document.getElementById("githubTokenNote");
+
+  function syncTokenUi() {
+    const api = cloud();
+    if (!githubTokenNote) {
+      return;
     }
+    githubTokenNote.hidden = false;
+    githubTokenNote.replaceChildren();
+    if (api && api.hasToken()) {
+      githubTokenNote.textContent = "Token saved. New posts publish for everyone.";
+      if (githubToken) {
+        githubToken.placeholder = "Token saved on this device";
+      }
+      return;
+    }
+    const link = document.createElement("a");
+    link.href = "https://github.com/settings/tokens/new?scopes=public_repo&description=Legacy%20Client%20publish";
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.textContent = "Create a GitHub token";
+    githubTokenNote.append(
+      link,
+      document.createTextNode(" with Contents write, paste it here, then publish. It stays on this device.")
+    );
   }
+
+  if (saveGithubToken) {
+    saveGithubToken.addEventListener("click", function () {
+      const api = cloud();
+      if (!api || !githubToken) {
+        return;
+      }
+      api.setToken(githubToken.value);
+      githubToken.value = "";
+      syncTokenUi();
+    });
+  }
+
+  syncTokenUi();
+  pullRemotePosts().then(function () {
+    const startId = postIdFromHash();
+    if (startId) {
+      const startPost = readPosts().filter(function (entry) {
+        return entry.id === startId;
+      })[0];
+      if (startPost) {
+        openPost(startPost, true);
+      }
+    }
+  });
 })();

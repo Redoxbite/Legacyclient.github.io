@@ -625,6 +625,13 @@ main {
   border-radius: 1.2rem;
 }
 
+.publish-key {
+  display: grid;
+  gap: 0.7rem;
+  max-width: 36rem;
+  margin-bottom: 1.2rem;
+}
+
 .contact__field {
   width: 100%;
   padding: 0.85rem 1rem;
