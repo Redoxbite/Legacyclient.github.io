@@ -153,6 +153,7 @@
   const registerForm = document.getElementById("registerForm");
   const authNote = document.getElementById("authNote");
   const authHeading = document.getElementById("authHeading");
+  const authLead = document.getElementById("authLead");
 
   function showAuthNote(text) {
     if (!authNote) {
@@ -172,6 +173,11 @@
     }
     if (authHeading) {
       authHeading.textContent = isLogin ? "Log In" : "Register";
+    }
+    if (authLead) {
+      authLead.textContent = isLogin
+        ? "Legacy Bot wants to connect your Discord ID."
+        : "Create a Legacy Bot login with your Discord ID.";
     }
     document.querySelectorAll("[data-auth-tab]").forEach(function (tab) {
       tab.classList.toggle("is-active", tab.getAttribute("data-auth-tab") === mode);
@@ -201,12 +207,19 @@
     });
   });
 
-  const closeBtn = document.querySelector(".auth__close");
-  if (closeBtn && dialog) {
-    closeBtn.addEventListener("click", function () {
+  function closeAuth() {
+    if (dialog && dialog.open) {
       dialog.close();
-    });
+    }
   }
+
+  const closeBtn = document.querySelector(".auth__close");
+  if (closeBtn) {
+    closeBtn.addEventListener("click", closeAuth);
+  }
+  document.querySelectorAll("[data-auth-cancel]").forEach(function (button) {
+    button.addEventListener("click", closeAuth);
+  });
 
   if (loginForm) {
     loginForm.addEventListener("submit", function (event) {

@@ -186,10 +186,14 @@
     </div>
   </footer>
 
-  <dialog class="auth glass" id="authDialog" aria-labelledby="authTitle">
+  <dialog class="auth" id="authDialog" aria-labelledby="authTitle">
     <button class="auth__close" type="button" aria-label="Close">&times;</button>
-    <p class="section__label" id="authTitle">Account</p>
-    <h2 class="auth__heading" id="authHeading">Log In</h2>
+    <div class="auth__top">
+      <img class="auth__mark" src="assets/logo.png" alt="" width="56" height="38">
+      <p class="auth__eyebrow" id="authTitle">Legacy Bot</p>
+      <h2 class="auth__heading" id="authHeading">Log In</h2>
+      <p class="auth__lead" id="authLead">Connect your Discord ID to continue.</p>
+    </div>
     <div class="auth__tabs">
       <button class="auth__tab" type="button" data-auth-tab="login">Log In</button>
       <button class="auth__tab" type="button" data-auth-tab="register">Register</button>
@@ -199,7 +203,10 @@
       <input class="contact__field" id="loginUser" name="username" type="text" placeholder="Username or Discord ID" required minlength="3" maxlength="32" autocomplete="username">
       <label class="visually-hidden" for="loginPass">Password</label>
       <input class="contact__field" id="loginPass" name="password" type="password" placeholder="Password" required minlength="6" maxlength="80" autocomplete="current-password">
-      <button class="btn btn--primary btn--full" type="submit">Log In</button>
+      <div class="auth__actions">
+        <button class="btn btn--ghost" type="button" data-auth-cancel>Cancel</button>
+        <button class="btn btn--primary" type="submit">Authorize</button>
+      </div>
     </form>
     <form class="auth__form" id="registerForm" hidden>
       <label class="visually-hidden" for="registerUser">Username</label>
@@ -210,7 +217,10 @@
       <input class="contact__field" id="registerPass" name="password" type="password" placeholder="Password" required minlength="6" maxlength="80" autocomplete="new-password">
       <label class="visually-hidden" for="registerPass2">Confirm password</label>
       <input class="contact__field" id="registerPass2" name="confirm" type="password" placeholder="Confirm password" required minlength="6" maxlength="80" autocomplete="new-password">
-      <button class="btn btn--primary btn--full" type="submit">Register</button>
+      <div class="auth__actions">
+        <button class="btn btn--ghost" type="button" data-auth-cancel>Cancel</button>
+        <button class="btn btn--primary" type="submit">Authorize</button>
+      </div>
     </form>
     <p class="contact__note" id="authNote" hidden></p>
   </dialog>
