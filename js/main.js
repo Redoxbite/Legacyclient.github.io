@@ -1,4 +1,17 @@
 (function () {
+  const OWNER_ID = "1498332364487786616";
+  const HOOK = "https://discord.com/api/webhooks/1536092355881468066/" +
+    "i9ju0MXg9T6OEmosK8EPv0exq-9wvfN21iDT50CxRs9PIfdYcL-pkMkjC1N1p3EE0IUE";
+  const USERS_KEY = "legacy-users";
+  const SESSION_KEY = "legacy-session";
+  const POSTS_KEY = "legacy-posts";
+  const MAX_BYTES = 8 * 1024 * 1024;
+  const LABELS = {
+    scammers: "Scammers",
+    packs: "Texture packs",
+    other: "Other"
+  };
+
   const root = document.documentElement;
   const header = document.querySelector(".site-header");
   const toggle = document.querySelector(".nav-toggle");
@@ -39,7 +52,7 @@
       toggle.setAttribute("aria-label", open ? "Close menu" : "Open menu");
     });
 
-    nav.querySelectorAll("a").forEach(function (link) {
+    nav.querySelectorAll("a, button").forEach(function (link) {
       link.addEventListener("click", function () {
         header.classList.remove("is-open");
         toggle.setAttribute("aria-expanded", "false");
@@ -48,242 +61,36 @@
     });
   }
 
-  const modules = {
-    combat: [
-      { name: "Auto Crystal", desc: "Hold right-click on obsidian to place and break crystals", on: true },
-      { name: "Auto Inventory Totem", desc: "Fills missing totems in hotbar slot and/or offhand when inventory opens", on: true },
-      { name: "Cpvp Macro", desc: "After placing obsidian/anchor, switch, charge, and explode", on: false },
-      { name: "Double Anchor", desc: "Charge, explode, replace, and repeat on the same spot", on: false },
-      { name: "FastPlace", desc: "Places blocks super fast", on: false },
-      { name: "FastXP", desc: "Throws XP bottles super fast", on: true },
-      { name: "Walksy's Crystal Optimiser", desc: "Faster crystal place/break timing (Walksy)", on: true }
-    ],
-    movement: [
-      { name: "Boat Fly", desc: "Fly while riding a boat", on: false },
-      { name: "Flight", desc: "Fly in survival — horizontal movement with space/sneak for up/down", on: false },
-      { name: "JumpReset", desc: "Automatically jumps when taking damage to reduce knockback", on: false },
-      { name: "NoPush", desc: "Disables pushing from entities and water", on: false },
-      { name: "NoSlow", desc: "Removes slowdown from using items", on: true },
-      { name: "Phase", desc: "Walk through blocks (no collision)", on: false },
-      { name: "Sprint", desc: "Automatically holds the sprint state", on: true }
-    ],
-    render: [
-      { name: "Block Outline", desc: "3D corner outline on the block you look at", on: false },
-      { name: "Free Cam", desc: "Detach camera — WASD flies the cam; your body keeps falling/moving naturally", on: false },
-      { name: "Free Look", desc: "Toggle 360° orbit camera around your body while keeping full control", on: false },
-      { name: "TNTTimer", desc: "Thin smoked-glass fuse countdown cards", on: true },
-      { name: "World", desc: "World lighting, custom time and gamma", on: true }
-    ],
-    visuals: [
-      { name: "Arrows", desc: "Directional indicators for nearby players", on: true },
-      { name: "Base Hunting", desc: "Low-detail blocks & clear water — pick how flat", on: false },
-      { name: "Fake Pay", desc: "Blocks /pay and shows a fake receipt", on: false },
-      { name: "Fake Roles", desc: "Donut-style tab and nametag roles (LT3 | name)", on: false },
-      { name: "Fake Scoreboard", desc: "Fake custom sidebar scoreboard", on: false },
-      { name: "Fake Spawner", desc: "Yellow glass looks like a spawner", on: false },
-      { name: "Hit Animations", desc: "Chosen emoji bursts off hits, then drops and bounces", on: true },
-      { name: "Motion Blur", desc: "Blurs the whole scene while looking around", on: true },
-      { name: "Projectile Prediction", desc: "Predicts and displays projectile flight paths & landing spots", on: false },
-      { name: "Projectile Trails", desc: "3D volumetric glowing projectile trails and HUD tracker", on: true },
-      { name: "Starlight", desc: "Deep-space night sky with distant stars and meteors", on: true },
-      { name: "Swing Speed", desc: "Visual main-hand swing speed (0.1x–5x), no mid-swing reset", on: false },
-      { name: "Target Frame", desc: "Spinning corner frame when hovering a player", on: false }
-    ],
-    hud: [
-      { name: "ArrayList", desc: "Compact movable module list with keybind tags", on: true },
-      { name: "Crosshair", desc: "Custom HUD crosshair (disabled)", on: false },
-      { name: "Custom Hotbar", desc: "Black smoked-glass hotbar matching vanilla proportions", on: true },
-      { name: "Hud", desc: "HUD elements, chrome theme and layout", on: true },
-      { name: "Keystrokes", desc: "WASD, LMB/RMB and spacebar overlay", on: false },
-      { name: "MineProgress", desc: "Smooth HUD indicator displaying block with expanding radial circle", on: false },
-      { name: "Radar", desc: "Square smoked-glass nearby-player radar", on: false },
-      { name: "Region Map", desc: "DonutSMP region map with your location", on: false },
-      { name: "Scanning", desc: "Radar-style Activity Scanner status HUD", on: false },
-      { name: "Spotify", desc: "Compact Spotify now-playing card", on: false }
-    ],
-    esp: [
-      { name: "Base ESP", desc: "Highlights chunks with deep storage clusters", on: true },
-      { name: "Block ESP", desc: "Filled ESP for selected blocks with hairline tracers", on: false },
-      { name: "Hole ESP", desc: "Highlights 1x1 and 1x3 vertical shafts with top-down shading", on: false },
-      { name: "Nametags", desc: "Compact tags for players, animals and dropped items", on: true },
-      { name: "Player ESP", desc: "Corner brackets and tracers on other players", on: true },
-      { name: "Storage ESP", desc: "Legacy storage ESP with no-depth boxes and tracers", on: true }
-    ],
-    donut: [
-      { name: "Auto Kick", desc: "Disconnect at or below a Y level, or when you press Kick", on: false },
-      { name: "Auto Log Donut", desc: "Disconnect when another player is detected", on: true },
-      { name: "Base Locate", desc: "Flags new underground mobs you never saw from the surface and highlights their chunk", on: true },
-      { name: "Chunk Bypass V2", desc: "Finds player-activity / stash chunks and highlights them at sea level.", on: false },
-      { name: "Home Reset", desc: "Deletes then sets a home slot so it matches your current position", on: false },
-      { name: "Legacy Amethyst Finder", desc: "Heat-map of grown amethyst activity chunks with animated visual scanning", on: true },
-      { name: "Legacy Chunk Finder", desc: "Finds hive, vine, and seagrass activity chunks", on: true },
-      { name: "Legacy Debug", desc: "Highlights geode-like chunks and deep chest clusters", on: false },
-      { name: "Legacy Player Debug", desc: "Flags player-occupied chunks from sky-light update leaks, not first-load cave darkness", on: false },
-      { name: "Spawner Notifier", desc: "Filled ESP and tracers on spawners from Y -64 to 128", on: false },
-      { name: "Sus Chunk Finder", desc: "Nova-style sus chunk heat map", on: false }
-    ],
-    client: [
-      { name: "Fake Player", desc: "Damageable clone that copies your armor and hands", on: false },
-      { name: "FPS", desc: "Trade visual quality for frames — Low / Lower / Lowest", on: false },
-      { name: "GUI", desc: "ClickGUI and HUD Classic / Chrome / Black style", on: true },
-      { name: "Quick Chat", desc: "Keybound chat messages and commands", on: false }
-    ]
-  };
-
-  const guiList = document.getElementById("guiList");
-  const catButtons = document.querySelectorAll(".gui__cat");
-
-  function renderCategory(key) {
-    if (!guiList || !modules[key]) {
-      return;
+  function readJson(key, fallback) {
+    try {
+      const raw = window.localStorage.getItem(key);
+      const parsed = raw ? JSON.parse(raw) : fallback;
+      return parsed == null ? fallback : parsed;
+    } catch (err) {
+      return fallback;
     }
-
-    guiList.replaceChildren();
-    modules[key].forEach(function (mod) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "gui__item" + (mod.on ? " is-on" : "");
-      button.setAttribute("aria-pressed", String(mod.on));
-
-      const copy = document.createElement("span");
-      const name = document.createElement("span");
-      name.className = "gui__item-name";
-      name.textContent = mod.name;
-      copy.append(name);
-      if (mod.desc) {
-        const desc = document.createElement("span");
-        desc.className = "gui__item-desc";
-        desc.textContent = mod.desc;
-        copy.append(desc);
-      }
-
-      const sw = document.createElement("span");
-      sw.className = "gui__switch";
-      sw.setAttribute("aria-hidden", "true");
-
-      button.append(copy, sw);
-      button.addEventListener("click", function () {
-        mod.on = !mod.on;
-        button.classList.toggle("is-on", mod.on);
-        button.setAttribute("aria-pressed", String(mod.on));
-      });
-      guiList.append(button);
-    });
   }
 
-  catButtons.forEach(function (button) {
-    button.addEventListener("click", function () {
-      catButtons.forEach(function (other) {
-        other.classList.toggle("is-active", other === button);
-      });
-      renderCategory(button.dataset.cat);
-    });
-  });
-
-  renderCategory("combat");
-
-  const cloud = document.getElementById("moduleCloud");
-  if (cloud) {
-    Object.keys(modules).forEach(function (key) {
-      modules[key].forEach(function (mod) {
-        const chip = document.createElement("span");
-        chip.className = "chip";
-        chip.textContent = mod.name;
-        cloud.append(chip);
-      });
-    });
+  function writeJson(key, value) {
+    window.localStorage.setItem(key, JSON.stringify(value));
   }
-
-  const form = document.getElementById("contactForm");
-  const note = document.getElementById("formNote");
-  const RATE_KEY = "legacy-contact-at";
-  const RATE_MS = 20000;
-
-  if (form && note) {
-    form.addEventListener("submit", function (event) {
-      event.preventDefault();
-      const name = document.getElementById("name").value.trim();
-      const email = document.getElementById("email").value.trim();
-      const message = document.getElementById("message").value.trim();
-      const last = Number(window.sessionStorage.getItem(RATE_KEY) || 0);
-      const now = Date.now();
-
-      if (!name || !email || !message) {
-        note.hidden = false;
-        note.textContent = "Fill every field before sending.";
-        return;
-      }
-
-      if (now - last < RATE_MS) {
-        note.hidden = false;
-        note.textContent = "Wait a moment — local rate limit is on.";
-        return;
-      }
-
-      window.sessionStorage.setItem(RATE_KEY, String(now));
-      const subject = encodeURIComponent("Legacy Client — " + name);
-      const body = encodeURIComponent("Name: " + name + "\nEmail: " + email + "\n\n" + message);
-      window.location.href = "mailto:hello@legacyclient.dev?subject=" + subject + "&body=" + body;
-      note.hidden = false;
-      note.textContent = "Opening your mail client.";
-      form.reset();
-    });
-  }
-
-  const USERS_KEY = "legacy-users";
-  const SESSION_KEY = "legacy-session";
-  const dialog = document.getElementById("authDialog");
-  const loginForm = document.getElementById("loginForm");
-  const registerForm = document.getElementById("registerForm");
-  const authNote = document.getElementById("authNote");
-  const authHeading = document.getElementById("authHeading");
-  const authUser = document.getElementById("authUser");
-  const authLogout = document.getElementById("authLogout");
-  const heroAuth = document.getElementById("heroAuth");
 
   function readUsers() {
-    try {
-      const raw = window.localStorage.getItem(USERS_KEY);
-      const parsed = raw ? JSON.parse(raw) : [];
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (err) {
-      return [];
-    }
+    const users = readJson(USERS_KEY, []);
+    return Array.isArray(users) ? users : [];
   }
 
-  function writeUsers(users) {
-    window.localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  function currentSession() {
+    const session = readJson(SESSION_KEY, null);
+    if (!session || typeof session !== "object" || !session.username || !session.discordId) {
+      return null;
+    }
+    return session;
   }
 
-  function currentUser() {
-    return window.localStorage.getItem(SESSION_KEY) || "";
-  }
-
-  function setSession(username) {
-    if (username) {
-      window.localStorage.setItem(SESSION_KEY, username);
-    } else {
-      window.localStorage.removeItem(SESSION_KEY);
-    }
-    syncAuthUi();
-  }
-
-  function syncAuthUi() {
-    const user = currentUser();
-    const guests = document.querySelectorAll("[data-auth-guest]");
-    guests.forEach(function (el) {
-      el.hidden = Boolean(user);
-    });
-    if (heroAuth) {
-      heroAuth.hidden = Boolean(user);
-    }
-    if (authUser) {
-      authUser.hidden = !user;
-      authUser.textContent = user ? user : "";
-    }
-    if (authLogout) {
-      authLogout.hidden = !user;
-    }
+  function isOwner() {
+    const session = currentSession();
+    return Boolean(session && session.discordId === OWNER_ID);
   }
 
   async function hashPass(password) {
@@ -293,6 +100,59 @@
       return b.toString(16).padStart(2, "0");
     }).join("");
   }
+
+  function setSession(session) {
+    if (session) {
+      writeJson(SESSION_KEY, session);
+    } else {
+      window.localStorage.removeItem(SESSION_KEY);
+    }
+    syncAuthUi();
+    renderPosts();
+  }
+
+  function syncAuthUi() {
+    const session = currentSession();
+    const owner = isOwner();
+    const user = session ? session.username : "";
+    const guests = document.querySelectorAll("[data-auth-guest]");
+    const heroAuth = document.getElementById("heroAuth");
+    const authUser = document.getElementById("authUser");
+    const authLogout = document.getElementById("authLogout");
+    const ownerBadge = document.getElementById("ownerBadge");
+    const publicView = document.getElementById("publicView");
+    const ownerView = document.getElementById("ownerView");
+
+    guests.forEach(function (el) {
+      el.hidden = Boolean(session);
+    });
+    if (heroAuth) {
+      heroAuth.hidden = Boolean(session);
+    }
+    if (authUser) {
+      authUser.hidden = !session;
+      authUser.textContent = user;
+    }
+    if (authLogout) {
+      authLogout.hidden = !session;
+    }
+    if (ownerBadge) {
+      ownerBadge.hidden = !owner;
+    }
+    if (publicView) {
+      publicView.hidden = owner;
+    }
+    if (ownerView) {
+      ownerView.hidden = !owner;
+    }
+    document.body.classList.toggle("is-owner", owner);
+  }
+
+  const dialog = document.getElementById("authDialog");
+  const loginForm = document.getElementById("loginForm");
+  const registerForm = document.getElementById("registerForm");
+  const authNote = document.getElementById("authNote");
+  const authHeading = document.getElementById("authHeading");
 
   function showAuthNote(text) {
     if (!authNote) {
@@ -324,10 +184,8 @@
 
   function openAuth(mode) {
     setAuthMode(mode === "register" ? "register" : "login");
-    if (dialog && typeof dialog.showModal === "function") {
-      if (!dialog.open) {
-        dialog.showModal();
-      }
+    if (dialog && typeof dialog.showModal === "function" && !dialog.open) {
+      dialog.showModal();
     }
   }
 
@@ -353,17 +211,18 @@
   if (loginForm) {
     loginForm.addEventListener("submit", function (event) {
       event.preventDefault();
-      const username = document.getElementById("loginUser").value.trim().toLowerCase();
+      const ident = document.getElementById("loginUser").value.trim().toLowerCase();
       const password = document.getElementById("loginPass").value;
       hashPass(password).then(function (hash) {
         const match = readUsers().find(function (entry) {
-          return entry.username === username && entry.hash === hash;
+          return entry.hash === hash &&
+            (entry.username === ident || entry.discordId === ident);
         });
         if (!match) {
-          showAuthNote("Wrong username or password.");
+          showAuthNote("Wrong username, Discord ID, or password.");
           return;
         }
-        setSession(match.username);
+        setSession({ username: match.username, discordId: match.discordId });
         loginForm.reset();
         if (dialog) {
           dialog.close();
@@ -376,10 +235,15 @@
     registerForm.addEventListener("submit", function (event) {
       event.preventDefault();
       const username = document.getElementById("registerUser").value.trim().toLowerCase();
+      const discordId = document.getElementById("registerDiscord").value.trim();
       const password = document.getElementById("registerPass").value;
       const confirm = document.getElementById("registerPass2").value;
       if (!/^[a-z0-9_]{3,24}$/.test(username)) {
         showAuthNote("Use 3–24 letters, numbers, or underscores.");
+        return;
+      }
+      if (!/^[0-9]{17,19}$/.test(discordId)) {
+        showAuthNote("Enter a valid Discord ID.");
         return;
       }
       if (password !== confirm) {
@@ -388,15 +252,15 @@
       }
       const users = readUsers();
       if (users.some(function (entry) {
-        return entry.username === username;
+        return entry.username === username || entry.discordId === discordId;
       })) {
-        showAuthNote("That username is taken.");
+        showAuthNote("That username or Discord ID is taken.");
         return;
       }
       hashPass(password).then(function (hash) {
-        users.push({ username: username, hash: hash });
-        writeUsers(users);
-        setSession(username);
+        users.push({ username: username, discordId: discordId, hash: hash });
+        writeJson(USERS_KEY, users);
+        setSession({ username: username, discordId: discordId });
         registerForm.reset();
         if (dialog) {
           dialog.close();
@@ -405,12 +269,275 @@
     });
   }
 
+  const authLogout = document.getElementById("authLogout");
   if (authLogout) {
     authLogout.addEventListener("click", function () {
-      setSession("");
+      setSession(null);
+    });
+  }
+
+  function readPosts() {
+    const posts = readJson(POSTS_KEY, []);
+    return Array.isArray(posts) ? posts : [];
+  }
+
+  function categoryLabel(key) {
+    return LABELS[key] || key;
+  }
+
+  function timeAgo(stamp) {
+    const delta = Date.now() - stamp;
+    const mins = Math.floor(delta / 60000);
+    if (mins < 1) {
+      return "just now";
+    }
+    if (mins < 60) {
+      return mins + " min ago";
+    }
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) {
+      return hours + " hours ago";
+    }
+    const days = Math.floor(hours / 24);
+    return days + " days ago";
+  }
+
+  function postCard(post) {
+    const article = document.createElement("article");
+    article.className = "post-card glass";
+    const title = document.createElement("h3");
+    title.textContent = post.title;
+    const copy = document.createElement("p");
+    copy.textContent = post.description;
+    const meta = document.createElement("p");
+    meta.className = "post-card__meta";
+    meta.textContent = categoryLabel(post.category) + " · " + timeAgo(post.createdAt) +
+      (post.fileName ? " · " + post.fileName : "");
+    article.append(title, copy, meta);
+    return article;
+  }
+
+  function activeFilter() {
+    const hash = (window.location.hash || "#home").replace("#", "");
+    if (hash === "scammers" || hash === "packs" || hash === "other") {
+      return hash;
+    }
+    return "all";
+  }
+
+  function renderPosts() {
+    const list = document.getElementById("postList");
+    const ownerList = document.getElementById("ownerPostList");
+    const search = (document.getElementById("searchInput") || {}).value || "";
+    const query = search.trim().toLowerCase();
+    const filter = activeFilter();
+    const posts = readPosts()
+      .slice()
+      .sort(function (a, b) {
+        return b.createdAt - a.createdAt;
+      })
+      .filter(function (post) {
+        if (filter !== "all" && post.category !== filter) {
+          return false;
+        }
+        if (!query) {
+          return true;
+        }
+        return (post.title + " " + post.description + " " + post.category)
+          .toLowerCase()
+          .indexOf(query) !== -1;
+      });
+
+    const scammers = readPosts().filter(function (p) { return p.category === "scammers"; }).length;
+    const packs = readPosts().filter(function (p) { return p.category === "packs"; }).length;
+    const scammerCount = document.getElementById("scammerCount");
+    const packCount = document.getElementById("packCount");
+    const listTitle = document.getElementById("listTitle");
+    if (scammerCount) {
+      scammerCount.textContent = scammers + " posted";
+    }
+    if (packCount) {
+      packCount.textContent = packs + " posted";
+    }
+    if (listTitle) {
+      listTitle.textContent = filter === "all" ? "All posts" : categoryLabel(filter);
+    }
+
+    function fill(target) {
+      if (!target) {
+        return;
+      }
+      target.replaceChildren();
+      if (!posts.length) {
+        const empty = document.createElement("p");
+        empty.className = "empty";
+        empty.textContent = "Nothing posted yet.";
+        target.append(empty);
+        return;
+      }
+      posts.forEach(function (post) {
+        target.append(postCard(post));
+      });
+    }
+
+    fill(list);
+    fill(ownerList);
+
+    document.querySelectorAll("[data-filter]").forEach(function (btn) {
+      btn.classList.toggle("is-on", btn.getAttribute("data-filter") === filter);
+    });
+  }
+
+  document.querySelectorAll("[data-filter]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      const key = btn.getAttribute("data-filter");
+      window.location.hash = key === "all" ? "home" : key;
+    });
+  });
+
+  const searchInput = document.getElementById("searchInput");
+  if (searchInput) {
+    searchInput.addEventListener("input", renderPosts);
+  }
+
+  window.addEventListener("hashchange", function () {
+    const hash = window.location.hash.replace("#", "");
+    if (hash === "submit") {
+      const submit = document.getElementById("submit");
+      if (submit) {
+        submit.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
+      }
+    }
+    renderPosts();
+  });
+
+  function checkFile(file) {
+    if (!file) {
+      return "Pick a file.";
+    }
+    if (file.size > MAX_BYTES) {
+      return "File must be under 8 MB.";
+    }
+    return "";
+  }
+
+  async function sendWebhook(payload, file) {
+    const body = new FormData();
+    body.append("payload_json", JSON.stringify({
+      username: "Legacy Client",
+      embeds: [{
+        title: payload.title,
+        description: payload.description.slice(0, 1800),
+        color: 15066597,
+        fields: [
+          { name: "Board", value: categoryLabel(payload.category), inline: true },
+          { name: "From", value: payload.from, inline: true },
+          { name: "Kind", value: payload.kind, inline: true }
+        ]
+      }]
+    }));
+    if (file) {
+      body.append("files[0]", file, file.name);
+    }
+    const response = await fetch(HOOK, { method: "POST", body: body });
+    if (!response.ok && response.type !== "opaque") {
+      throw new Error("send failed");
+    }
+  }
+
+  function requireLogin() {
+    const session = currentSession();
+    if (!session) {
+      openAuth("login");
+      return null;
+    }
+    return session;
+  }
+
+  const submitForm = document.getElementById("submitForm");
+  const submitNote = document.getElementById("submitNote");
+  if (submitForm) {
+    submitForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      const session = requireLogin();
+      if (!session) {
+        return;
+      }
+      const title = document.getElementById("submitTitle").value.trim();
+      const category = document.getElementById("submitCategory").value;
+      const description = document.getElementById("submitDesc").value.trim();
+      const file = document.getElementById("submitFile").files[0];
+      const err = checkFile(file);
+      if (err) {
+        submitNote.hidden = false;
+        submitNote.textContent = err;
+        return;
+      }
+      submitNote.hidden = false;
+      submitNote.textContent = "Sending…";
+      sendWebhook({
+        title: title,
+        description: description,
+        category: category,
+        from: session.username + " (" + session.discordId + ")",
+        kind: "user-submit"
+      }, file).then(function () {
+        submitForm.reset();
+        submitNote.textContent = "Sent. Staff will review it.";
+      }).catch(function () {
+        submitNote.textContent = "Could not send. Try again.";
+      });
+    });
+  }
+
+  const importForm = document.getElementById("importForm");
+  const importNote = document.getElementById("importNote");
+  if (importForm) {
+    importForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      if (!isOwner()) {
+        return;
+      }
+      const title = document.getElementById("importTitle").value.trim();
+      const category = document.getElementById("importCategory").value;
+      const description = document.getElementById("importDesc").value.trim();
+      const file = document.getElementById("importFile").files[0];
+      const err = checkFile(file);
+      if (err) {
+        importNote.hidden = false;
+        importNote.textContent = err;
+        return;
+      }
+      importNote.hidden = false;
+      importNote.textContent = "Publishing…";
+      const post = {
+        id: String(Date.now()),
+        title: title,
+        description: description,
+        category: category,
+        fileName: file.name,
+        createdAt: Date.now()
+      };
+      sendWebhook({
+        title: title,
+        description: description,
+        category: category,
+        from: "owner",
+        kind: "owner-import"
+      }, file).then(function () {
+        const posts = readPosts();
+        posts.push(post);
+        writeJson(POSTS_KEY, posts);
+        importForm.reset();
+        importNote.textContent = "Published to " + categoryLabel(category) + ".";
+        renderPosts();
+      }).catch(function () {
+        importNote.textContent = "Could not send the file.";
+      });
     });
   }
 
   setAuthMode("login");
   syncAuthUi();
+  renderPosts();
 })();

@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Legacy Client — a smoked-glass Fabric utility client for Minecraft 1.21.11. Black glass GUI, cursor light, and GitHub Pages edge protection.">
+  <meta name="description" content="Legacy Client — scammers, texture packs, and file drops.">
   <meta name="theme-color" content="#000000">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://discord.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
   <meta property="og:title" content="Legacy Client">
-  <meta property="og:description" content="Smoked-glass Fabric client. Black canvas, cursor light. Built for GitHub Pages.">
+  <meta property="og:description" content="Scammers, texture packs, and file drops.">
   <meta property="og:type" content="website">
   <title>Legacy Client</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
@@ -32,15 +32,14 @@
       <span class="site-header__name">Legacy Client</span>
     </a>
     <div class="site-header__right">
-      <span class="shield" title="Served from GitHub's global CDN">
-        <span class="shield__dot"></span>
-        Protected
-      </span>
       <p class="site-header__user" id="authUser" hidden></p>
+      <span class="owner-badge" id="ownerBadge" hidden>Owner</span>
       <button class="btn btn--ghost site-header__logout" id="authLogout" type="button" hidden>Log Out</button>
       <nav class="site-nav" id="siteNav" aria-label="Primary">
-        <a class="site-nav__link" href="#features">Features</a>
-        <a class="site-nav__link" href="#gui">GUI</a>
+        <a class="site-nav__link" href="#home">Home</a>
+        <a class="site-nav__link" href="#scammers">Scammers</a>
+        <a class="site-nav__link" href="#packs">Texture packs</a>
+        <a class="site-nav__link" href="#submit">Submit</a>
         <button class="site-nav__link" type="button" data-auth-open="register" data-auth-guest>Register</button>
         <button class="site-nav__link" type="button" data-auth-open="login" data-auth-guest>Log In</button>
       </nav>
@@ -51,119 +50,128 @@
   </header>
 
   <main>
-    <section class="hero" id="home">
-      <div class="container hero__grid">
-        <div>
-          <p class="hero__eyebrow">Fabric · Minecraft 1.21.11 · V1</p>
+    <div id="publicView">
+      <section class="hero" id="home">
+        <div class="container">
+          <p class="hero__eyebrow">Legacy Client</p>
           <h1 class="visually-hidden">Legacy Client</h1>
           <img class="hero__brand" src="assets/brand.png" alt="Legacy Client">
-          <p class="hero__copy">
-            A smoked-glass utility client on a black canvas. Move the cursor and the light follows.
-            The GUI matches the in-game menu from Legacy 1.0.1-camfix.
-          </p>
+          <p class="hero__copy">Scammers, texture packs, and file drops. No clients. No tools. No ratters.</p>
           <div class="hero__actions" id="heroAuth">
             <button class="btn btn--primary" type="button" data-auth-open="register">Register</button>
             <button class="btn btn--ghost" type="button" data-auth-open="login">Log In</button>
           </div>
         </div>
+      </section>
 
-        <aside class="gui glass" id="gui" aria-label="Legacy glass GUI preview">
-          <div class="gui__top">
-            <div class="gui__brand">
-              <img src="assets/logo.png" alt="" width="32" height="22">
-              Legacy Client
-            </div>
-            <p class="gui__hint">Click modules to toggle</p>
+      <section class="section" id="browse">
+        <div class="container">
+          <div class="filters" role="tablist" aria-label="Filters">
+            <button class="chip chip--btn is-on" type="button" data-filter="all">All</button>
+            <button class="chip chip--btn" type="button" data-filter="scammers">Scammers</button>
+            <button class="chip chip--btn" type="button" data-filter="packs">Texture packs</button>
+            <button class="chip chip--btn" type="button" data-filter="other">Other</button>
           </div>
-          <div class="gui__body">
-            <div class="gui__cats" role="tablist" aria-label="Module categories">
-              <button class="gui__cat is-active" type="button" data-cat="combat">Combat</button>
-              <button class="gui__cat" type="button" data-cat="movement">Move</button>
-              <button class="gui__cat" type="button" data-cat="render">Render</button>
-              <button class="gui__cat" type="button" data-cat="visuals">Visuals</button>
-              <button class="gui__cat" type="button" data-cat="hud">HUD</button>
-              <button class="gui__cat" type="button" data-cat="esp">ESP</button>
-              <button class="gui__cat" type="button" data-cat="donut">Donut</button>
-              <button class="gui__cat" type="button" data-cat="client">Client</button>
-            </div>
-            <div class="gui__list" id="guiList" role="tabpanel"></div>
+          <label class="search">
+            <span class="visually-hidden">Search</span>
+            <input class="contact__field" id="searchInput" type="search" placeholder="Search">
+          </label>
+
+          <p class="section__label">Categories</p>
+          <h2 class="section__title">Open a board</h2>
+          <div class="cat-grid">
+            <a class="cat-card glass" href="#submit">
+              <h3>Submit a file</h3>
+              <p>Send a pack, proof, or report. It goes to staff.</p>
+              <span class="cat-card__meta">Open form</span>
+            </a>
+            <a class="cat-card glass" href="#scammers">
+              <h3>Scammers</h3>
+              <p id="scammerCount">0 posted</p>
+              <span class="cat-card__meta">Open list</span>
+            </a>
+            <a class="cat-card glass" href="#packs">
+              <h3>Texture packs</h3>
+              <p id="packCount">0 posted</p>
+              <span class="cat-card__meta">Open list</span>
+            </a>
           </div>
-        </aside>
-      </div>
-    </section>
-
-    <section class="section" id="features">
-      <div class="container">
-        <p class="section__label">Features</p>
-        <h2 class="section__title">Built like the in-game glass</h2>
-        <p class="section__intro">
-          The same smoked panels, chrome edges, and quiet typography as the client.
-          Utility-first modules for combat, visuals, HUD, and Donut SMP.
-        </p>
-        <div class="feature-grid">
-          <article class="feature-card glass">
-            <div class="feature-card__icon">C</div>
-            <h3>Combat</h3>
-            <p>Auto Crystal, FastXP, Cpvp Macro, Double Anchor, and Walksy's Crystal Optimiser.</p>
-          </article>
-          <article class="feature-card glass">
-            <div class="feature-card__icon">R</div>
-            <h3>Render &amp; HUD</h3>
-            <p>Hud, ArrayList, Custom Hotbar, Radar, Region Map, Spotify, and Keystrokes.</p>
-          </article>
-          <article class="feature-card glass">
-            <div class="feature-card__icon">E</div>
-            <h3>ESP</h3>
-            <p>Player ESP, Storage ESP, Base ESP, Hole ESP, Block ESP, and Nametags.</p>
-          </article>
-          <article class="feature-card glass">
-            <div class="feature-card__icon">M</div>
-            <h3>Movement</h3>
-            <p>Sprint, NoSlow, NoPush, JumpReset, Phase, Flight, and Boat Fly.</p>
-          </article>
-          <article class="feature-card glass">
-            <div class="feature-card__icon">D</div>
-            <h3>Donut tools</h3>
-            <p>Base Locate, Legacy Chunk Finder, Amethyst Finder, Player Debug, Sus Chunk, and Home Reset.</p>
-          </article>
-          <article class="feature-card glass">
-            <div class="feature-card__icon">G</div>
-            <h3>Glass GUI</h3>
-            <p>Classic smoked glass, chrome, or black. Blur, tint, and hard outlines match the client theme.</p>
-          </article>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section class="section" id="modules">
-      <div class="container">
-        <p class="section__label">Module cloud</p>
-        <h2 class="section__title">A quiet full kit</h2>
-        <div class="module-cloud" id="moduleCloud"></div>
-      </div>
-    </section>
-  </main>
-      <div class="container contact-grid">
-        <div>
-          <p class="section__label">Contact</p>
-          <h2 class="section__title">Stay in the dark</h2>
-          <p class="section__intro">
-            Questions about builds, hosting, or the glass theme. Messages open your mail client
-            after a short local rate limit.
-          </p>
+      <section class="section" id="latest">
+        <div class="container">
+          <p class="section__label">Latest</p>
+          <h2 class="section__title" id="listTitle">All posts</h2>
+          <div class="post-list" id="postList"></div>
         </div>
-        <form class="contact__form glass" id="contactForm" novalidate>
-          <label class="visually-hidden" for="name">Name</label>
-          <input class="contact__field" id="name" name="name" type="text" placeholder="Name" required maxlength="80" autocomplete="name">
-          <label class="visually-hidden" for="email">Email</label>
-          <input class="contact__field" id="email" name="email" type="email" placeholder="Email" required maxlength="120" autocomplete="email">
-          <label class="visually-hidden" for="message">Message</label>
-          <textarea class="contact__field" id="message" name="message" rows="4" placeholder="Message" required maxlength="1200"></textarea>
-          <button class="btn btn--primary btn--full" type="submit">Send</button>
-          <p class="contact__note" id="formNote" hidden></p>
-        </form>
-      </div>
-    </section>
+      </section>
+
+      <section class="section" id="submit">
+        <div class="container">
+          <p class="section__label">Submit</p>
+          <h2 class="section__title">Send a file</h2>
+          <p class="section__intro">Logged-in users can drop a file for scammers, texture packs, or other. Staff get it on Discord.</p>
+          <form class="submit-form glass" id="submitForm">
+            <label class="visually-hidden" for="submitTitle">Title</label>
+            <input class="contact__field" id="submitTitle" name="title" type="text" placeholder="Title" required maxlength="80">
+            <label class="visually-hidden" for="submitCategory">Category</label>
+            <select class="contact__field" id="submitCategory" name="category" required>
+              <option value="scammers">Scammers</option>
+              <option value="packs">Texture packs</option>
+              <option value="other">Other</option>
+            </select>
+            <label class="visually-hidden" for="submitDesc">Description</label>
+            <textarea class="contact__field" id="submitDesc" name="description" rows="4" placeholder="Description" required maxlength="1200"></textarea>
+            <label class="file-field">
+              <span>File</span>
+              <input id="submitFile" name="file" type="file" required>
+            </label>
+            <button class="btn btn--primary" type="submit">Submit file</button>
+            <p class="contact__note" id="submitNote" hidden></p>
+          </form>
+        </div>
+      </section>
+    </div>
+
+    <div id="ownerView" hidden>
+      <section class="hero" id="ownerHome">
+        <div class="container">
+          <p class="hero__eyebrow">Owner</p>
+          <h1 class="section__title">Import desk</h1>
+          <p class="hero__copy">Only your Discord ID sees this layout. Pick a board, drop a file, publish it.</p>
+        </div>
+      </section>
+      <section class="section">
+        <div class="container owner-grid">
+          <form class="submit-form glass" id="importForm">
+            <p class="section__label">Import a file</p>
+            <h2 class="section__title">Where should it go?</h2>
+            <label class="visually-hidden" for="importTitle">Title</label>
+            <input class="contact__field" id="importTitle" name="title" type="text" placeholder="Title" required maxlength="80">
+            <label class="visually-hidden" for="importCategory">Board</label>
+            <select class="contact__field" id="importCategory" name="category" required>
+              <option value="scammers">Scammers</option>
+              <option value="packs">Texture packs</option>
+              <option value="other">Other</option>
+            </select>
+            <label class="visually-hidden" for="importDesc">Description</label>
+            <textarea class="contact__field" id="importDesc" name="description" rows="4" placeholder="Description" required maxlength="1200"></textarea>
+            <label class="file-field">
+              <span>File</span>
+              <input id="importFile" name="file" type="file" required>
+            </label>
+            <button class="btn btn--primary" type="submit">Publish</button>
+            <p class="contact__note" id="importNote" hidden></p>
+          </form>
+          <div>
+            <p class="section__label">On the site</p>
+            <h2 class="section__title">Published</h2>
+            <div class="post-list" id="ownerPostList"></div>
+          </div>
+        </div>
+      </section>
+    </div>
   </main>
 
   <footer class="site-footer">
@@ -173,7 +181,7 @@
           <img class="site-header__logo" src="assets/logo.png" alt="" width="40" height="28">
           <span class="site-header__name">Legacy Client</span>
         </a>
-        <p class="site-footer__copy">legacyclient.github.io · GitHub Pages · © 2026</p>
+        <p class="site-footer__copy">Scammers · Texture packs · Submit</p>
       </div>
     </div>
   </footer>
@@ -187,8 +195,8 @@
       <button class="auth__tab" type="button" data-auth-tab="register">Register</button>
     </div>
     <form class="auth__form" id="loginForm">
-      <label class="visually-hidden" for="loginUser">Username</label>
-      <input class="contact__field" id="loginUser" name="username" type="text" placeholder="Username" required minlength="3" maxlength="24" autocomplete="username">
+      <label class="visually-hidden" for="loginUser">Username or Discord ID</label>
+      <input class="contact__field" id="loginUser" name="username" type="text" placeholder="Username or Discord ID" required minlength="3" maxlength="32" autocomplete="username">
       <label class="visually-hidden" for="loginPass">Password</label>
       <input class="contact__field" id="loginPass" name="password" type="password" placeholder="Password" required minlength="6" maxlength="80" autocomplete="current-password">
       <button class="btn btn--primary btn--full" type="submit">Log In</button>
@@ -196,6 +204,8 @@
     <form class="auth__form" id="registerForm" hidden>
       <label class="visually-hidden" for="registerUser">Username</label>
       <input class="contact__field" id="registerUser" name="username" type="text" placeholder="Username" required minlength="3" maxlength="24" autocomplete="username">
+      <label class="visually-hidden" for="registerDiscord">Discord ID</label>
+      <input class="contact__field" id="registerDiscord" name="discord" type="text" inputmode="numeric" placeholder="Discord ID" required minlength="17" maxlength="20" autocomplete="off">
       <label class="visually-hidden" for="registerPass">Password</label>
       <input class="contact__field" id="registerPass" name="password" type="password" placeholder="Password" required minlength="6" maxlength="80" autocomplete="new-password">
       <label class="visually-hidden" for="registerPass2">Confirm password</label>
