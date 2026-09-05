@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,600;1,700;1,800;1,900&family=Inter:ital,wght@0,400;0,500;0,600;1,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=10">
+  <link rel="stylesheet" href="css/style.css?v=11">
 </head>
 <body>
   <a class="skip-link" href="#home">Skip to content</a>
@@ -205,7 +205,16 @@
     <p class="contact__note" id="authNote" hidden></p>
   </dialog>
 
-  <script src="js/config.js?v=10"></script>
-  <script src="js/main.js?v=10"></script>
+  <dialog class="post-view" id="postDialog" aria-labelledby="postViewTitle">
+    <button class="auth__close" type="button" id="postViewClose" aria-label="Close">&times;</button>
+    <img class="post-view__picture" id="postViewPicture" alt="">
+    <p class="section__label" id="postViewCategory">Texture packs</p>
+    <h2 class="post-view__title" id="postViewTitle">Pack</h2>
+    <p class="post-view__copy" id="postViewCopy"></p>
+    <button class="btn btn--primary btn--full" type="button" id="postViewDownload">Download</button>
+  </dialog>
+
+  <script src="js/config.js?v=11"></script>
+  <script src="js/main.js?v=11"></script>
 </body>
 </html>

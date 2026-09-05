@@ -74,6 +74,62 @@
     window.localStorage.setItem(key, JSON.stringify(value));
   }
 
+  const FILE_DB = "legacy-client";
+  const FILE_STORE = "files";
+
+  function openFileDb() {
+    return new Promise(function (resolve, reject) {
+      const request = indexedDB.open(FILE_DB, 1);
+      request.onupgradeneeded = function () {
+        if (!request.result.objectStoreNames.contains(FILE_STORE)) {
+          request.result.createObjectStore(FILE_STORE);
+        }
+      };
+      request.onsuccess = function () {
+        resolve(request.result);
+      };
+      request.onerror = function () {
+        reject(request.error);
+      };
+    });
+  }
+
+  function savePostFile(id, file) {
+    return openFileDb().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        const tx = db.transaction(FILE_STORE, "readwrite");
+        tx.objectStore(FILE_STORE).put({
+          blob: file,
+          name: file.name,
+          type: file.type || "application/octet-stream"
+        }, id);
+        tx.oncomplete = function () {
+          resolve();
+        };
+        tx.onerror = function () {
+          reject(tx.error);
+        };
+      });
+    });
+  }
+
+  function loadPostFile(id) {
+    return openFileDb().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        const tx = db.transaction(FILE_STORE, "readonly");
+        const request = tx.objectStore(FILE_STORE).get(id);
+        request.onsuccess = function () {
+          resolve(request.result || null);
+        };
+        request.onerror = function () {
+          reject(request.error);
+        };
+      });
+    }).catch(function () {
+      return null;
+    });
+  }
+
   function currentSession() {
     const session = readJson(SESSION_KEY, null);
     if (!session || typeof session !== "object" || !session.username || !session.discordId) {
@@ -333,23 +389,99 @@
   function postCard(post) {
     const article = document.createElement("article");
     article.className = "post-card glass";
-    if (post.preview) {
-      const img = document.createElement("img");
-      img.className = "post-card__preview";
-      img.src = post.preview;
-      img.alt = "";
-      article.append(img);
-    }
+    article.tabIndex = 0;
+    article.setAttribute("role", "button");
+    const profile = document.createElement("img");
+    profile.className = "post-card__profile";
+    profile.src = post.preview || "assets/logo.png";
+    profile.alt = "";
+    const body = document.createElement("div");
+    body.className = "post-card__body";
     const title = document.createElement("h3");
     title.textContent = post.title;
     const copy = document.createElement("p");
     copy.textContent = post.description;
     const meta = document.createElement("p");
     meta.className = "post-card__meta";
-    meta.textContent = categoryLabel(post.category) + " · " + timeAgo(post.createdAt) +
-      (post.fileName ? " · " + post.fileName : "");
-    article.append(title, copy, meta);
+    meta.textContent = categoryLabel(post.category) + " · " + timeAgo(post.createdAt);
+    const open = document.createElement("span");
+    open.className = "post-card__open";
+    open.textContent = "Open";
+    body.append(title, copy, meta, open);
+    article.append(profile, body);
+    article.addEventListener("click", function () {
+      openPost(post);
+    });
+    article.addEventListener("keydown", function (event) {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openPost(post);
+      }
+    });
     return article;
+  }
+
+  const postDialog = document.getElementById("postDialog");
+  const postViewPicture = document.getElementById("postViewPicture");
+  const postViewCategory = document.getElementById("postViewCategory");
+  const postViewTitle = document.getElementById("postViewTitle");
+  const postViewCopy = document.getElementById("postViewCopy");
+  const postViewDownload = document.getElementById("postViewDownload");
+  const postViewClose = document.getElementById("postViewClose");
+  let activePost = null;
+
+  function openPost(post) {
+    activePost = post;
+    if (postViewPicture) {
+      postViewPicture.hidden = !post.preview;
+      postViewPicture.src = post.preview || "";
+    }
+    if (postViewCategory) {
+      postViewCategory.textContent = categoryLabel(post.category);
+    }
+    if (postViewTitle) {
+      postViewTitle.textContent = post.title;
+    }
+    if (postViewCopy) {
+      postViewCopy.textContent = post.description;
+    }
+    if (postViewDownload) {
+      postViewDownload.hidden = false;
+      postViewDownload.textContent = "Download";
+    }
+    if (postDialog && typeof postDialog.showModal === "function" && !postDialog.open) {
+      postDialog.showModal();
+    }
+  }
+
+  if (postViewClose && postDialog) {
+    postViewClose.addEventListener("click", function () {
+      postDialog.close();
+    });
+  }
+
+  if (postViewDownload) {
+    postViewDownload.addEventListener("click", function () {
+      if (!activePost) {
+        return;
+      }
+      loadPostFile(activePost.id).then(function (record) {
+        if (!record || !record.blob) {
+          postViewDownload.textContent = "File is not saved on this device";
+          return;
+        }
+        const url = URL.createObjectURL(record.blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = record.name || activePost.fileName || "download.zip";
+        document.body.append(link);
+        link.click();
+        link.remove();
+        window.setTimeout(function () {
+          URL.revokeObjectURL(url);
+        }, 1000);
+      });
+    });
   }
 
   function activeFilter() {
@@ -694,15 +826,19 @@
           imageName = "pack-preview.jpg";
           files.push(dataUrlToFile(preview, imageName));
         }
-        return sendWebhook({
-          title: title,
-          description: description,
-          category: category,
-          from: session.username + " (" + session.discordId + ")",
-          kind: "owner-import",
-          imageName: imageName
-        }, files).catch(function () {
+        return savePostFile(post.id, file).catch(function () {
           return null;
+        }).then(function () {
+          return sendWebhook({
+            title: title,
+            description: description,
+            category: category,
+            from: session.username + " (" + session.discordId + ")",
+            kind: "owner-import",
+            imageName: imageName
+          }, files).catch(function () {
+            return null;
+          });
         });
       }).then(function () {
         const posts = readPosts();

@@ -187,7 +187,8 @@ select {
 .contact__field:focus-visible,
 .auth__close:focus-visible,
 .chip--btn:focus-visible,
-.dropzone:focus-visible {
+.dropzone:focus-visible,
+.post-card:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
@@ -481,6 +482,45 @@ main {
   background: var(--glass-hover);
 }
 
+.post-card {
+  display: grid;
+  grid-template-columns: 4.8rem 1fr;
+  gap: 1rem;
+  align-items: center;
+  cursor: pointer;
+}
+
+.post-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.post-card__profile {
+  width: 4.8rem;
+  height: 4.8rem;
+  object-fit: cover;
+  border-radius: 0.9rem;
+  background: #0a0a0c;
+}
+
+.post-card__body {
+  min-width: 0;
+}
+
+.post-card__open {
+  display: inline-block;
+  margin-top: 0.75rem;
+  color: var(--mark);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.post-card:hover .post-card__open,
+.post-card:focus-visible .post-card__open {
+  color: var(--accent);
+}
+
 .cat-card h3,
 .post-card h3 {
   font-size: 1.2rem;
@@ -616,13 +656,6 @@ main {
   border-radius: 0.5rem;
 }
 
-.post-card__preview {
-  width: 100%;
-  height: 10rem;
-  object-fit: cover;
-  border-radius: 0.65rem;
-  margin-bottom: 0.85rem;
-}
 
 .contact__note {
   color: var(--mark);
@@ -770,6 +803,43 @@ main {
 .auth .contact__note {
   margin-top: 0.75rem;
   text-align: center;
+}
+
+.post-view {
+  width: min(28rem, 92vw);
+  padding: 1.5rem 1.3rem 1.35rem;
+  border: 1px solid #2a2a2e;
+  border-radius: 0.85rem;
+  color: var(--text);
+  background: #111114;
+  box-shadow: 0 1.6rem 4rem rgba(0, 0, 0, 0.72);
+}
+
+.post-view::backdrop {
+  background: rgba(0, 0, 0, 0.82);
+}
+
+.post-view__picture {
+  width: 100%;
+  max-height: 16rem;
+  object-fit: contain;
+  border-radius: 0.75rem;
+  margin: 0.4rem 0 1rem;
+  background: #0a0a0c;
+}
+
+.post-view__title {
+  font-size: 1.7rem;
+  margin-bottom: 0.4rem;
+}
+
+.post-view__copy {
+  color: var(--text-secondary);
+  margin-bottom: 1.1rem;
+}
+
+.post-view .btn {
+  margin-top: 0.2rem;
 }
 
 @media (min-width: 768px) {
