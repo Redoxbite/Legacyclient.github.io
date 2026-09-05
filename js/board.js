@@ -281,6 +281,10 @@
     }
     document.body.classList.toggle("is-owner", owner);
     document.body.classList.toggle("is-post-open", Boolean(activePost));
+    const tools = document.getElementById("postOwnerTools");
+    if (tools) {
+      tools.hidden = !owner || !activePost;
+    }
   }
 
   const dialog = document.getElementById("authDialog");
@@ -534,6 +538,9 @@
   const postViewCopy = document.getElementById("postViewCopy");
   const postViewDownloads = document.getElementById("postViewDownloads");
   const postViewTime = document.getElementById("postViewTime");
+  const postOwnerTools = document.getElementById("postOwnerTools");
+  const postEdit = document.getElementById("postEdit");
+  const postRemove = document.getElementById("postRemove");
   const postViewClose = document.getElementById("postViewClose");
   const zoomDialog = document.getElementById("zoomDialog");
   const zoomPicture = document.getElementById("zoomPicture");
@@ -698,6 +705,9 @@
     if (postViewTime) {
       postViewTime.textContent = timeAgo(post.createdAt);
     }
+    if (postOwnerTools) {
+      postOwnerTools.hidden = !isOwner();
+    }
     fillDownloadRows(post);
     showPostPage(true);
     window.scrollTo(0, 0);
@@ -821,7 +831,6 @@
       editNote.textContent = "";
     }
     syncEditPicture();
-    closePost(false);
     if (editDialog && typeof editDialog.showModal === "function" && !editDialog.open) {
       editDialog.showModal();
     }
@@ -842,6 +851,24 @@
       closePost(false);
     }
     renderPosts();
+  }
+
+  if (postEdit) {
+    postEdit.addEventListener("click", function () {
+      if (!activePost || !isOwner()) {
+        return;
+      }
+      openEdit(activePost);
+    });
+  }
+
+  if (postRemove) {
+    postRemove.addEventListener("click", function () {
+      if (!activePost || !isOwner()) {
+        return;
+      }
+      removePost(activePost);
+    });
   }
 
   if (postMenu) {
@@ -1019,7 +1046,7 @@
           editDialog.close();
         }
         if (activePost && activePost.id === next.id) {
-          activePost = next;
+          openPost(next, true);
         }
         renderPosts();
       }).catch(function () {

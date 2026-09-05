@@ -20,6 +20,9 @@
   --stroke: rgba(230, 234, 240, 0.16);
   --stroke-strong: rgba(230, 234, 240, 0.32);
   --shadow: 0 1.5rem 3.5rem rgba(0, 0, 0, 0.55);
+  --danger: #ffb4b4;
+  --danger-bg: rgba(255, 80, 80, 0.08);
+  --danger-stroke: rgba(255, 180, 180, 0.28);
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
@@ -190,6 +193,7 @@ select {
 .site-nav__link:focus-visible,
 .nav-toggle:focus-visible,
 .btn:focus-visible,
+.btn--danger:focus-visible,
 .contact__field:focus-visible,
 .auth__close:focus-visible,
 .chip--btn:focus-visible,
@@ -399,6 +403,23 @@ main {
 }
 
 .btn--ghost:active {
+  transform: scale(0.98);
+}
+
+.btn--danger {
+  color: var(--danger);
+  border-color: var(--danger-stroke);
+  background: var(--danger-bg);
+}
+
+.btn--danger:hover,
+.btn--danger:focus-visible {
+  color: var(--text);
+  border-color: var(--danger);
+  background: rgba(255, 80, 80, 0.18);
+}
+
+.btn--danger:active {
   transform: scale(0.98);
 }
 
@@ -998,6 +1019,18 @@ main {
   margin-top: 1rem;
   color: var(--muted);
   font-size: var(--text-sm);
+}
+
+.desk__owner {
+  margin-top: 1.4rem;
+  padding-top: 1.15rem;
+  border-top: 1px solid var(--stroke);
+}
+
+.desk__owner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
 }
 
 .dl {
