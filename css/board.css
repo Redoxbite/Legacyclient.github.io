@@ -1028,6 +1028,17 @@ main {
   background: var(--tile-media);
 }
 
+.desk__media.is-full {
+  aspect-ratio: auto;
+}
+
+.desk__media.is-full .desk__picture {
+  object-fit: contain;
+  height: auto;
+  max-height: 85vh;
+  background: #050506;
+}
+
 .desk__hint {
   position: absolute;
   right: 0.85rem;
@@ -1158,14 +1169,18 @@ main {
 
 .zoom {
   position: relative;
-  width: min(64rem, 96vw);
+  width: min(72rem, 96vw);
+  max-height: 96vh;
   padding: 2.4rem 1.2rem 1.2rem;
   border-radius: var(--radius-lg);
 }
 
 .zoom__picture {
-  width: 100%;
-  max-height: 80vh;
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: 88vh;
+  margin: 0 auto;
   object-fit: contain;
 }
 

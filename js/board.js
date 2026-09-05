@@ -1205,6 +1205,7 @@
     }
     if (postViewMedia) {
       postViewMedia.disabled = !hasPreview;
+      postViewMedia.classList.toggle("is-full", Boolean(hasPreview && post.category !== "packs"));
     }
     if (postViewCategory) {
       postViewCategory.textContent = postChipLabel(post);
@@ -1254,6 +1255,11 @@
   if (zoomClose && zoomDialog) {
     zoomClose.addEventListener("click", function () {
       zoomDialog.close();
+    });
+    zoomDialog.addEventListener("click", function (event) {
+      if (event.target === zoomDialog) {
+        zoomDialog.close();
+      }
     });
   }
 
@@ -1530,7 +1536,9 @@
           downloads: 0
         });
       });
-      const pictureReady = newPicture ? previewThumb(newPicture) : Promise.resolve(next.preview || "");
+      const pictureReady = newPicture
+        ? previewThumb(newPicture, editCategory.value === "packs")
+        : Promise.resolve(next.preview || "");
       if (editNote) {
         editNote.hidden = false;
         editNote.textContent = "Saving…";
@@ -1846,7 +1854,7 @@
     });
   }
 
-  function fitDataUrl(dataUrl) {
+  function fitDataUrl(dataUrl, crop) {
     return new Promise(function (resolve) {
       if (!dataUrl) {
         resolve("");
@@ -1854,28 +1862,38 @@
       }
       const image = new Image();
       image.onload = function () {
-        const targetW = 1280;
-        const targetH = 720;
         const canvas = document.createElement("canvas");
-        canvas.width = targetW;
-        canvas.height = targetH;
-        const srcRatio = image.width / Math.max(image.height, 1);
-        const dstRatio = targetW / targetH;
-        let sx = 0;
-        let sy = 0;
-        let sw = image.width;
-        let sh = image.height;
-        if (srcRatio > dstRatio) {
-          sw = image.height * dstRatio;
-          sx = (image.width - sw) / 2;
-        } else {
-          sh = image.width / dstRatio;
-          sy = (image.height - sh) / 2;
-        }
         const ctx = canvas.getContext("2d");
-        ctx.fillStyle = "#000000";
-        ctx.fillRect(0, 0, targetW, targetH);
-        ctx.drawImage(image, sx, sy, sw, sh, 0, 0, targetW, targetH);
+        if (crop) {
+          const targetW = 1280;
+          const targetH = 720;
+          canvas.width = targetW;
+          canvas.height = targetH;
+          const srcRatio = image.width / Math.max(image.height, 1);
+          const dstRatio = targetW / targetH;
+          let sx = 0;
+          let sy = 0;
+          let sw = image.width;
+          let sh = image.height;
+          if (srcRatio > dstRatio) {
+            sw = image.height * dstRatio;
+            sx = (image.width - sw) / 2;
+          } else {
+            sh = image.width / dstRatio;
+            sy = (image.height - sh) / 2;
+          }
+          ctx.fillStyle = "#000000";
+          ctx.fillRect(0, 0, targetW, targetH);
+          ctx.drawImage(image, sx, sy, sw, sh, 0, 0, targetW, targetH);
+        } else {
+          const maxEdge = 1920;
+          const scale = Math.min(1, maxEdge / Math.max(image.width, 1), maxEdge / Math.max(image.height, 1));
+          const width = Math.max(1, Math.round(image.width * scale));
+          const height = Math.max(1, Math.round(image.height * scale));
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(image, 0, 0, width, height);
+        }
         resolve(canvas.toDataURL("image/jpeg", 0.86));
       };
       image.onerror = function () {
@@ -1885,8 +1903,10 @@
     });
   }
 
-  function previewThumb(file) {
-    return readAsDataUrl(file).then(fitDataUrl);
+  function previewThumb(file, crop) {
+    return readAsDataUrl(file).then(function (raw) {
+      return fitDataUrl(raw, crop);
+    });
   }
 
   function showFittedShot(imgEl, zoneEl, file) {
@@ -1903,7 +1923,7 @@
       }
       imgEl.hidden = false;
       imgEl.src = raw;
-      return fitDataUrl(raw);
+      return fitDataUrl(raw, false);
     }).then(function (fitted) {
       if (fitted) {
         imgEl.hidden = false;
@@ -2069,7 +2089,7 @@
         downloads: 0,
         createdAt: Date.now()
       }, fileMetaFrom(wantFile ? file : null));
-      const previewReady = picture ? previewThumb(picture) : Promise.resolve("");
+      const previewReady = picture ? previewThumb(picture, category === "packs") : Promise.resolve("");
       previewReady.then(function (preview) {
         if (preview) {
           post.preview = preview;
