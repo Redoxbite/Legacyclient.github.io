@@ -9,7 +9,6 @@
     scammers: "Scammers",
     packs: "Texture packs",
     retards: "🤡 Retards",
-    "old-bypasses": "Old bypasses/addons",
     "ai-bypass": "AI bypass",
     other: "Other"
   };
@@ -477,7 +476,7 @@
   }
 
   function needsDownloadFile(category) {
-    return category === "packs" || category === "old-bypasses" || category === "ai-bypass";
+    return category === "packs" || category === "ai-bypass";
   }
 
   function fileMetaFrom(file) {
@@ -1649,12 +1648,10 @@
     const scammers = readPosts().filter(function (p) { return p.category === "scammers"; }).length;
     const packs = readPosts().filter(function (p) { return p.category === "packs"; }).length;
     const retards = readPosts().filter(function (p) { return p.category === "retards"; }).length;
-    const oldBypasses = readPosts().filter(function (p) { return p.category === "old-bypasses"; }).length;
     const aiBypass = readPosts().filter(function (p) { return p.category === "ai-bypass"; }).length;
     const scammerCount = document.getElementById("scammerCount");
     const packCount = document.getElementById("packCount");
     const retardCount = document.getElementById("retardCount");
-    const oldBypassCount = document.getElementById("oldBypassCount");
     const aiBypassCount = document.getElementById("aiBypassCount");
     const listTitle = document.getElementById("listTitle");
     const packFilters = document.getElementById("packFilters");
@@ -1666,9 +1663,6 @@
     }
     if (retardCount) {
       retardCount.textContent = retards + " posted";
-    }
-    if (oldBypassCount) {
-      oldBypassCount.textContent = oldBypasses + " posted";
     }
     if (aiBypassCount) {
       aiBypassCount.textContent = aiBypass + " posted";
