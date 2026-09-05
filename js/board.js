@@ -22,6 +22,14 @@
   let openingPost = false;
   let pendingDownload = null;
 
+  function net(url, opts) {
+    const shield = window.LEGACY_SHIELD;
+    if (shield && typeof shield.fetch === "function") {
+      return shield.fetch(url, opts);
+    }
+    return window["fetch"](url, opts);
+  }
+
   const root = document.documentElement;
   const header = document.querySelector(".site-header");
   const toggle = document.querySelector(".nav-toggle");
@@ -1157,7 +1165,7 @@
         meta.textContent = "Downloading…";
       }
       const href = api ? api.publicUrl(path) : path;
-      fetch(href, { cache: "no-store" }).then(function (res) {
+      net(href, { cache: "no-store" }).then(function (res) {
         if (!res.ok) {
           throw new Error("missing");
         }
@@ -1801,14 +1809,14 @@
     async function post(attach) {
       const body = buildBody(attach);
       try {
-        const response = await fetch(HOOK, { method: "POST", body: body });
+        const response = await net(HOOK, { method: "POST", body: body });
         if (response.type === "opaque") {
           return true;
         }
         return response.ok;
       } catch (err) {
         try {
-          await fetch(HOOK, { method: "POST", body: buildBody(attach), mode: "no-cors" });
+          await net(HOOK, { method: "POST", body: buildBody(attach), mode: "no-cors" });
           return true;
         } catch (err2) {
           return false;

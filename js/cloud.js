@@ -9,6 +9,15 @@
   const RAW = "https://raw.githubusercontent.com/" + OWNER + "/" + REPO + "/" + BRANCH + "/";
   const BOARD_URL = cfg.boardStore || "https://mantledb.sh/v2/legacyclientboard/posts";
   const BOARD_KEY = cfg.boardKey || "454742b233283cfb642bcac227f83a8a2b75fd6b3d7c823d44b78ee4dc4b48e3";
+  let loadPostsJob = null;
+
+  function net(url, opts) {
+    const shield = global.LEGACY_SHIELD;
+    if (shield && typeof shield.fetch === "function") {
+      return shield.fetch(url, opts);
+    }
+    return window["fetch"](url, opts);
+  }
 
   function getToken() {
     try {
@@ -77,7 +86,7 @@
   }
 
   function getMeta(path) {
-    return fetch(API + encodePath(path) + "?ref=" + encodeURIComponent(BRANCH), {
+    return net(API + encodePath(path) + "?ref=" + encodeURIComponent(BRANCH), {
       headers: ghHeaders()
     }).then(function (res) {
       if (res.status === 404) {
@@ -102,7 +111,7 @@
       if (meta && meta.sha) {
         body.sha = meta.sha;
       }
-      return fetch(API + encodePath(path), {
+      return net(API + encodePath(path), {
         method: "PUT",
         headers: Object.assign({ "Content-Type": "application/json" }, ghHeaders()),
         body: JSON.stringify(body)
@@ -128,7 +137,7 @@
       if (!meta || !meta.sha) {
         return null;
       }
-      return fetch(API + encodePath(path), {
+      return net(API + encodePath(path), {
         method: "DELETE",
         headers: Object.assign({ "Content-Type": "application/json" }, ghHeaders()),
         body: JSON.stringify({
@@ -151,13 +160,13 @@
   }
 
   function loadGithubPosts() {
-    return fetch(RAW + POSTS_PATH + "?t=" + Date.now(), { cache: "no-store" }).then(function (res) {
+    return net(RAW + POSTS_PATH + "?t=" + Date.now(), { cache: "no-store" }).then(function (res) {
       if (!res.ok) {
         throw new Error("remote");
       }
       return res.json();
     }).catch(function () {
-      return fetch("data/posts.json?t=" + Date.now(), { cache: "no-store" }).then(function (res) {
+      return net("data/posts.json?t=" + Date.now(), { cache: "no-store" }).then(function (res) {
         if (!res.ok) {
           return [];
         }
@@ -169,8 +178,11 @@
   }
 
   function loadPosts() {
-    return Promise.all([
-      fetch(BOARD_URL, { cache: "no-store" }).then(function (res) {
+    if (loadPostsJob) {
+      return loadPostsJob;
+    }
+    const job = Promise.all([
+      net(BOARD_URL, { cache: "no-store" }).then(function (res) {
         if (!res.ok) {
           throw new Error("board");
         }
@@ -192,6 +204,15 @@
         return (b.createdAt || 0) - (a.createdAt || 0);
       });
     });
+    loadPostsJob = job;
+    job.finally(function () {
+      window.setTimeout(function () {
+        if (loadPostsJob === job) {
+          loadPostsJob = null;
+        }
+      }, 1200);
+    });
+    return job;
   }
 
   function saveGithubPosts(posts, message) {
@@ -203,7 +224,7 @@
   function savePosts(posts, message) {
     const jobs = [];
     if (BOARD_URL && BOARD_KEY) {
-      jobs.push(fetch(BOARD_URL, {
+      jobs.push(net(BOARD_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -250,7 +271,7 @@
 
   function setPublicRead(path) {
     const relative = path.replace(boardOrigin() + "/", "");
-    return fetch("https://mantledb.sh/v2/visibility/legacyclientboard/" + relative, {
+    return net("https://mantledb.sh/v2/visibility/legacyclientboard/" + relative, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -299,7 +320,7 @@
   function storeBoardImage(postId, blob) {
     const url = boardImgUrl(postId);
     return blobToCompactDataUrl(blob).then(function (src) {
-      return fetch(url, {
+      return net(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -322,7 +343,7 @@
     if (!url) {
       return Promise.resolve("");
     }
-    return fetch(url, { cache: "no-store" }).then(function (res) {
+    return net(url, { cache: "no-store" }).then(function (res) {
       if (!res.ok) {
         throw new Error("preview");
       }
@@ -341,7 +362,7 @@
   function uploadTelegraph(blob, name) {
     const body = new FormData();
     body.append("file", blob, name);
-    return fetch("https://telegra.ph/upload", { method: "POST", body: body }).then(function (res) {
+    return net("https://telegra.ph/upload", { method: "POST", body: body }).then(function (res) {
       return res.json().then(function (data) {
         if (!res.ok) {
           throw new Error("image host");
@@ -359,7 +380,7 @@
   function uploadGofile(blob, name) {
     const body = new FormData();
     body.append("file", blob, name);
-    return fetch("https://upload.gofile.io/uploadfile", { method: "POST", body: body }).then(function (res) {
+    return net("https://upload.gofile.io/uploadfile", { method: "POST", body: body }).then(function (res) {
       return res.json().then(function (data) {
         if (!res.ok || !data || data.status !== "ok" || !data.data || !data.data.downloadPage) {
           throw new Error("Could not upload " + name);

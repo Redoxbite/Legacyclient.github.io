@@ -922,6 +922,13 @@ main {
   border-radius: 1.3rem;
 }
 
+.site-footer__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+}
+
 .site-footer__copy {
   color: var(--muted);
   font-size: var(--text-sm);
@@ -934,6 +941,93 @@ main {
 
 .site-footer__copy:active {
   transform: scale(0.98);
+}
+
+.site-footer__shield {
+  color: var(--muted);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.shield {
+  position: fixed;
+  inset: 0;
+  z-index: 220;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.78);
+  transition: opacity var(--speed) var(--ease), visibility var(--speed) var(--ease);
+}
+
+.shield.is-off {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+body.is-shielded {
+  overflow: hidden;
+}
+
+.shield__panel {
+  width: min(26rem, 100%);
+  padding: 1.6rem 1.5rem 1.4rem;
+  border-radius: var(--radius-xl);
+  text-align: center;
+}
+
+.shield__mark {
+  width: 3.5rem;
+  height: auto;
+  margin: 0 auto 0.85rem;
+}
+
+.shield__eyebrow,
+.shield__meta {
+  color: var(--muted);
+  font-size: var(--text-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.shield__title {
+  margin: 0.35rem 0 0.55rem;
+  font-size: var(--text-lg);
+}
+
+.shield__copy {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.shield__bar {
+  position: relative;
+  overflow: hidden;
+  height: 0.28rem;
+  margin: 1.1rem 0 0.75rem;
+  border-radius: 999px;
+  background: var(--glass);
+}
+
+.shield__fill {
+  display: block;
+  width: 38%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, transparent, var(--mark), transparent);
+  animation: shield-slide 1.2s var(--ease) infinite;
+}
+
+@keyframes shield-slide {
+  from {
+    transform: translateX(-120%);
+  }
+
+  to {
+    transform: translateX(280%);
+  }
 }
 
 .page-404 {
@@ -1428,6 +1522,10 @@ main {
   .desk__title {
     font-size: 2.4rem;
   }
+
+  .site-footer__meta {
+    align-items: flex-end;
+  }
 }
 
 @media (min-width: 1024px) {
@@ -1472,6 +1570,12 @@ main {
   .scene__snow,
   .scene__fog {
     animation: none;
+  }
+
+  .shield__fill {
+    animation: none;
+    width: 100%;
+    background: var(--mark);
   }
 }
 
