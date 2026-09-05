@@ -5,7 +5,6 @@
   const HOOK = cfg.hook || "";
   const SESSION_KEY = cfg.sessionKey || "legacy-session";
   const POSTS_KEY = "legacy-posts";
-  const MAX_BYTES = 50 * 1024 * 1024;
   const LABELS = {
     scammers: "Scammers",
     packs: "Texture packs",
@@ -456,9 +455,6 @@
   function checkFile(file) {
     if (!file) {
       return "Pick a file.";
-    }
-    if (file.size > MAX_BYTES) {
-      return "File is too large.";
     }
     return "";
   }
