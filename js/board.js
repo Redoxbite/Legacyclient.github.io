@@ -9,6 +9,8 @@
     scammers: "Scammers",
     packs: "Texture packs",
     retards: "🤡 Retards",
+    "old-bypasses": "Old bypasses/addons",
+    "ai-bypass": "AI bypass",
     other: "Other"
   };
   const PACK_TYPES = {
@@ -836,7 +838,7 @@
     if (hash === "packs-sky" || hash === "packs-pvp" || hash === "packs-custom") {
       return { filter: "packs", packType: hash.slice(6) };
     }
-    if (hash === "scammers" || hash === "packs" || hash === "retards" || hash === "other") {
+    if (Object.prototype.hasOwnProperty.call(LABELS, hash)) {
       return { filter: hash, packType: "" };
     }
     return { filter: "all", packType: "" };
@@ -1603,9 +1605,13 @@
     const scammers = readPosts().filter(function (p) { return p.category === "scammers"; }).length;
     const packs = readPosts().filter(function (p) { return p.category === "packs"; }).length;
     const retards = readPosts().filter(function (p) { return p.category === "retards"; }).length;
+    const oldBypasses = readPosts().filter(function (p) { return p.category === "old-bypasses"; }).length;
+    const aiBypass = readPosts().filter(function (p) { return p.category === "ai-bypass"; }).length;
     const scammerCount = document.getElementById("scammerCount");
     const packCount = document.getElementById("packCount");
     const retardCount = document.getElementById("retardCount");
+    const oldBypassCount = document.getElementById("oldBypassCount");
+    const aiBypassCount = document.getElementById("aiBypassCount");
     const listTitle = document.getElementById("listTitle");
     const packFilters = document.getElementById("packFilters");
     if (scammerCount) {
@@ -1616,6 +1622,12 @@
     }
     if (retardCount) {
       retardCount.textContent = retards + " posted";
+    }
+    if (oldBypassCount) {
+      oldBypassCount.textContent = oldBypasses + " posted";
+    }
+    if (aiBypassCount) {
+      aiBypassCount.textContent = aiBypass + " posted";
     }
     if (listTitle) {
       if (filter === "packs" && packType) {
