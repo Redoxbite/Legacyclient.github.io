@@ -298,6 +298,8 @@
           : api.uploadBlob("preview.jpg", shot, "Add preview for " + post.title);
         jobs.push(up.then(function (uploaded) {
           published.preview = uploaded.url;
+        }).catch(function () {
+          published.preview = "";
         }));
       } else if (isHttpUrl(post.preview)) {
         published.preview = post.preview;
@@ -316,7 +318,12 @@
           }
         }));
       });
-      return Promise.all(jobs);
+      return Promise.all(jobs).then(function () {
+        if (allBlobs.length && !hasPublicFiles(published)) {
+          throw new Error("Could not publish the file for everyone.");
+        }
+        return null;
+      });
     }).then(function () {
       return api.loadPosts().then(function (list) {
         const next = list.filter(function (entry) {
@@ -373,6 +380,15 @@
     });
   }
 
+  function hasPublicFiles(post) {
+    if (isHttpUrl(post && post.filePath)) {
+      return true;
+    }
+    return postFiles(post).some(function (entry) {
+      return isHttpUrl(entry.url) || isHttpUrl(entry.path);
+    });
+  }
+
   function pullRemotePosts() {
     const api = cloud();
     if (!api) {
@@ -383,6 +399,49 @@
     return api.loadPosts().then(function (posts) {
       remotePosts = posts;
       remoteReady = true;
+      renderPosts();
+    }).catch(function () {
+      remoteReady = true;
+      renderPosts();
+    }).then(function () {
+      return syncLocalPostsToCloud();
+    });
+  }
+
+  function syncLocalPostsToCloud() {
+    const api = cloud();
+    if (!isOwner() || !api || !api.canPublish()) {
+      return Promise.resolve();
+    }
+    const remoteById = {};
+    remotePosts.forEach(function (post) {
+      remoteById[post.id] = post;
+    });
+    const pending = readLocalPosts().filter(function (post) {
+      const remote = remoteById[post.id];
+      return !(remote && hasPublicFiles(remote));
+    });
+    if (!pending.length) {
+      return Promise.resolve();
+    }
+    return pending.reduce(function (chain, post) {
+      return chain.then(function () {
+        return loadPostFile(fileKey(post.id, "main")).then(function (record) {
+          const blob = record && record.blob;
+          if (!blob && !hasPublicFiles(post) && !(post.preview && post.preview.indexOf("data:") === 0)) {
+            return null;
+          }
+          const blobs = blob ? [{
+            id: "main",
+            name: (record && record.name) || post.fileName,
+            blob: blob
+          }] : [];
+          return publishPostToCloud(post, blobs);
+        }).catch(function () {
+          return null;
+        });
+      });
+    }, Promise.resolve()).then(function () {
       renderPosts();
     });
   }

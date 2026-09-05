@@ -8,7 +8,7 @@
   const API = "https://api.github.com/repos/" + OWNER + "/" + REPO + "/contents/";
   const RAW = "https://raw.githubusercontent.com/" + OWNER + "/" + REPO + "/" + BRANCH + "/";
   const BOARD_URL = cfg.boardStore || "https://mantledb.sh/v2/legacyclientboard/posts";
-  const BOARD_KEY = cfg.boardKey || "";
+  const BOARD_KEY = cfg.boardKey || "454742b233283cfb642bcac227f83a8a2b75fd6b3d7c823d44b78ee4dc4b48e3";
 
   function getToken() {
     try {
@@ -169,13 +169,28 @@
   }
 
   function loadPosts() {
-    return fetch(BOARD_URL, { cache: "no-store" }).then(function (res) {
-      if (!res.ok) {
-        throw new Error("board");
-      }
-      return res.json();
-    }).then(parseList).catch(function () {
-      return loadGithubPosts();
+    return Promise.all([
+      fetch(BOARD_URL, { cache: "no-store" }).then(function (res) {
+        if (!res.ok) {
+          throw new Error("board");
+        }
+        return res.json();
+      }).then(parseList).catch(function () {
+        return [];
+      }),
+      loadGithubPosts()
+    ]).then(function (lists) {
+      const byId = {};
+      lists[1].concat(lists[0]).forEach(function (post) {
+        if (post && post.id) {
+          byId[post.id] = post;
+        }
+      });
+      return Object.keys(byId).map(function (id) {
+        return byId[id];
+      }).sort(function (a, b) {
+        return (b.createdAt || 0) - (a.createdAt || 0);
+      });
     });
   }
 
