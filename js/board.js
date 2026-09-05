@@ -17,6 +17,7 @@
     pvp: "PvP packs",
     custom: "Custom packs"
   };
+  const DEFAULT_COVER = "assets/default-cover.svg";
   let activePost = null;
   let openingPost = false;
   let pendingDownload = null;
@@ -176,11 +177,11 @@
   function previewSrc(post) {
     const preview = post && post.preview;
     if (!preview) {
-      return "assets/logo.png";
+      return DEFAULT_COVER;
     }
     const api = cloud();
     if (api && api.isBoardPreview && api.isBoardPreview(preview)) {
-      return "assets/logo.png";
+      return DEFAULT_COVER;
     }
     if (preview.indexOf("data:") === 0 || preview.indexOf("blob:") === 0 ||
         preview.indexOf("http") === 0 || preview.indexOf("assets/") === 0) {
@@ -196,7 +197,7 @@
     const preview = post && post.preview;
     const api = cloud();
     if (api && api.isBoardPreview && api.isBoardPreview(preview)) {
-      img.src = "assets/logo.png";
+      img.src = DEFAULT_COVER;
       api.loadPreview(preview).then(function (src) {
         if (src) {
           img.src = src;
@@ -906,8 +907,8 @@
     fillPreview(picture, post);
     picture.alt = "";
     picture.addEventListener("error", function () {
-      if (picture.getAttribute("src") !== "assets/logo.png") {
-        picture.src = "assets/logo.png";
+      if (picture.getAttribute("src") !== DEFAULT_COVER) {
+        picture.src = DEFAULT_COVER;
       }
     });
     const chip = document.createElement("span");
@@ -978,8 +979,8 @@
 
   if (postViewPicture) {
     postViewPicture.addEventListener("error", function () {
-      if (postViewPicture.getAttribute("src") !== "assets/logo.png") {
-        postViewPicture.src = "assets/logo.png";
+      if (postViewPicture.getAttribute("src") !== DEFAULT_COVER) {
+        postViewPicture.src = DEFAULT_COVER;
       }
     });
   }
@@ -1252,7 +1253,7 @@
       return;
     }
     const src = previewSrc(target);
-    if (src && src !== "assets/logo.png") {
+    if (src && src !== DEFAULT_COVER) {
       window.open(src, "_blank", "noopener");
     }
   }

@@ -668,6 +668,11 @@ main {
   object-fit: cover;
 }
 
+.post-card__picture[src$="default-cover.svg"] {
+  object-fit: cover;
+  background: #07080b;
+}
+
 .post-card--shot .post-card__media {
   aspect-ratio: auto;
   background: #050506;
