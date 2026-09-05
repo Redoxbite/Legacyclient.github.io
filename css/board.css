@@ -726,7 +726,9 @@ main {
 }
 
 .dropzone.is-shot {
-  padding: 0.7rem;
+  padding: 0;
+  overflow: hidden;
+  min-height: 10rem;
 }
 
 .dropzone.is-shot .dropzone__label,
@@ -739,8 +741,13 @@ main {
 }
 
 .dropzone.is-shot .dropzone__image {
+  display: block;
   width: 100%;
+  height: 100%;
+  min-height: 10rem;
   max-height: none;
+  object-fit: cover;
+  border-radius: 0;
 }
 
 

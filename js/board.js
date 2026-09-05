@@ -925,14 +925,17 @@
     ["dragenter", "dragover"].forEach(function (type) {
       editPackPreview.addEventListener(type, function (event) {
         event.preventDefault();
+        event.stopPropagation();
         editPackPreview.classList.add("is-over");
       });
     });
-    editPackPreview.addEventListener("dragleave", function () {
+    editPackPreview.addEventListener("dragleave", function (event) {
+      event.preventDefault();
       editPackPreview.classList.remove("is-over");
     });
     editPackPreview.addEventListener("drop", function (event) {
       event.preventDefault();
+      event.stopPropagation();
       editPackPreview.classList.remove("is-over");
       const file = event.dataTransfer && event.dataTransfer.files[0];
       if (!file) {
@@ -1264,14 +1267,30 @@
     return cleaned.slice(0, 80) || fallback || "file.bin";
   }
 
-  function previewThumb(file) {
+  function readAsDataUrl(file) {
     return new Promise(function (resolve) {
       if (!file) {
         resolve("");
         return;
       }
+      const reader = new FileReader();
+      reader.onload = function () {
+        resolve(String(reader.result || ""));
+      };
+      reader.onerror = function () {
+        resolve("");
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function fitDataUrl(dataUrl) {
+    return new Promise(function (resolve) {
+      if (!dataUrl) {
+        resolve("");
+        return;
+      }
       const image = new Image();
-      const url = URL.createObjectURL(file);
       image.onload = function () {
         const targetW = 1280;
         const targetH = 720;
@@ -1295,29 +1314,38 @@
         ctx.fillStyle = "#000000";
         ctx.fillRect(0, 0, targetW, targetH);
         ctx.drawImage(image, sx, sy, sw, sh, 0, 0, targetW, targetH);
-        URL.revokeObjectURL(url);
         resolve(canvas.toDataURL("image/jpeg", 0.86));
       };
       image.onerror = function () {
-        URL.revokeObjectURL(url);
         resolve("");
       };
-      image.src = url;
+      image.src = dataUrl;
     });
+  }
+
+  function previewThumb(file) {
+    return readAsDataUrl(file).then(fitDataUrl);
   }
 
   function showFittedShot(imgEl, zoneEl, file) {
     if (!imgEl || !file) {
       return;
     }
-    previewThumb(file).then(function (dataUrl) {
-      if (!dataUrl) {
-        return;
+    readAsDataUrl(file).then(function (raw) {
+      if (!raw || raw.indexOf("data:image") !== 0) {
+        return "";
       }
-      imgEl.hidden = false;
-      imgEl.src = dataUrl;
       if (zoneEl) {
         zoneEl.classList.add("is-shot");
+        zoneEl.classList.remove("is-over");
+      }
+      imgEl.hidden = false;
+      imgEl.src = raw;
+      return fitDataUrl(raw);
+    }).then(function (fitted) {
+      if (fitted) {
+        imgEl.hidden = false;
+        imgEl.src = fitted;
       }
     });
   }
