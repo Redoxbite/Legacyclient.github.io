@@ -896,7 +896,7 @@
 
   function postCard(post) {
     const article = document.createElement("article");
-    article.className = "post-card";
+    article.className = post.category === "packs" ? "post-card" : "post-card post-card--shot";
     article.tabIndex = 0;
     article.setAttribute("role", "button");
     const media = document.createElement("div");
@@ -1212,7 +1212,7 @@
     }
     if (postViewMedia) {
       postViewMedia.disabled = !hasPreview;
-      postViewMedia.classList.toggle("is-full", Boolean(hasPreview && post.category !== "packs"));
+      postViewMedia.classList.toggle("is-full", hasPreview);
     }
     if (postViewCategory) {
       postViewCategory.textContent = postChipLabel(post);
@@ -1554,7 +1554,7 @@
         });
       });
       const pictureReady = newPicture
-        ? previewThumb(newPicture, editCategory.value === "packs")
+        ? previewThumb(newPicture)
         : Promise.resolve(next.preview || "");
       if (editNote) {
         editNote.hidden = false;
@@ -1866,7 +1866,7 @@
     });
   }
 
-  function fitDataUrl(dataUrl, crop) {
+  function fitDataUrl(dataUrl) {
     return new Promise(function (resolve) {
       if (!dataUrl) {
         resolve("");
@@ -1874,39 +1874,16 @@
       }
       const image = new Image();
       image.onload = function () {
+        const maxEdge = 1920;
+        const scale = Math.min(1, maxEdge / Math.max(image.width, 1), maxEdge / Math.max(image.height, 1));
+        const width = Math.max(1, Math.round(image.width * scale));
+        const height = Math.max(1, Math.round(image.height * scale));
         const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
         const ctx = canvas.getContext("2d");
-        if (crop) {
-          const targetW = 1280;
-          const targetH = 720;
-          canvas.width = targetW;
-          canvas.height = targetH;
-          const srcRatio = image.width / Math.max(image.height, 1);
-          const dstRatio = targetW / targetH;
-          let sx = 0;
-          let sy = 0;
-          let sw = image.width;
-          let sh = image.height;
-          if (srcRatio > dstRatio) {
-            sw = image.height * dstRatio;
-            sx = (image.width - sw) / 2;
-          } else {
-            sh = image.width / dstRatio;
-            sy = (image.height - sh) / 2;
-          }
-          ctx.fillStyle = "#000000";
-          ctx.fillRect(0, 0, targetW, targetH);
-          ctx.drawImage(image, sx, sy, sw, sh, 0, 0, targetW, targetH);
-        } else {
-          const maxEdge = 1920;
-          const scale = Math.min(1, maxEdge / Math.max(image.width, 1), maxEdge / Math.max(image.height, 1));
-          const width = Math.max(1, Math.round(image.width * scale));
-          const height = Math.max(1, Math.round(image.height * scale));
-          canvas.width = width;
-          canvas.height = height;
-          ctx.drawImage(image, 0, 0, width, height);
-        }
-        resolve(canvas.toDataURL("image/jpeg", 0.86));
+        ctx.drawImage(image, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", 0.9));
       };
       image.onerror = function () {
         resolve("");
@@ -1915,10 +1892,8 @@
     });
   }
 
-  function previewThumb(file, crop) {
-    return readAsDataUrl(file).then(function (raw) {
-      return fitDataUrl(raw, crop);
-    });
+  function previewThumb(file) {
+    return readAsDataUrl(file).then(fitDataUrl);
   }
 
   function showFittedShot(imgEl, zoneEl, file) {
@@ -1935,7 +1910,7 @@
       }
       imgEl.hidden = false;
       imgEl.src = raw;
-      return fitDataUrl(raw, false);
+      return fitDataUrl(raw);
     }).then(function (fitted) {
       if (fitted) {
         imgEl.hidden = false;
@@ -2101,7 +2076,7 @@
         downloads: 0,
         createdAt: Date.now()
       }, fileMetaFrom(wantFile ? file : null));
-      const previewReady = picture ? previewThumb(picture, category === "packs") : Promise.resolve("");
+      const previewReady = picture ? previewThumb(picture) : Promise.resolve("");
       previewReady.then(function (preview) {
         if (preview) {
           post.preview = preview;

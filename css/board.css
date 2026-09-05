@@ -556,6 +556,17 @@ main {
   object-fit: cover;
 }
 
+.post-card--shot .post-card__media {
+  aspect-ratio: auto;
+  background: #050506;
+}
+
+.post-card--shot .post-card__picture {
+  height: auto;
+  max-height: 32rem;
+  object-fit: contain;
+}
+
 .post-card__chip {
   position: absolute;
   top: 0.7rem;
@@ -735,10 +746,10 @@ main {
 
 .dropzone__image {
   width: min(100%, 22rem);
-  max-height: 12.5rem;
-  aspect-ratio: var(--shot-ratio);
-  object-fit: cover;
+  max-height: 22rem;
+  object-fit: contain;
   border-radius: 0.5rem;
+  background: #050506;
 }
 
 .dropzone.is-shot {
@@ -759,11 +770,12 @@ main {
 .dropzone.is-shot .dropzone__image {
   display: block;
   width: 100%;
-  height: 100%;
-  min-height: 10rem;
-  max-height: none;
-  object-fit: cover;
+  height: auto;
+  min-height: 8rem;
+  max-height: 28rem;
+  object-fit: contain;
   border-radius: 0;
+  background: #050506;
 }
 
 
@@ -998,7 +1010,7 @@ main {
   aspect-ratio: var(--shot-ratio);
   border: 1px solid var(--stroke);
   border-radius: var(--radius-lg);
-  background: var(--tile-media);
+  background: #050506;
   cursor: zoom-in;
 }
 
@@ -1024,8 +1036,8 @@ main {
 .desk__picture {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  background: var(--tile-media);
+  object-fit: contain;
+  background: #050506;
 }
 
 .desk__media.is-full {
@@ -1033,10 +1045,8 @@ main {
 }
 
 .desk__media.is-full .desk__picture {
-  object-fit: contain;
   height: auto;
-  max-height: 85vh;
-  background: #050506;
+  max-height: 90vh;
 }
 
 .desk__hint {
