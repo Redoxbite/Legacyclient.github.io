@@ -142,7 +142,9 @@
   const authNote = document.getElementById("authNote");
   const authIp = document.getElementById("authIp");
   const STATE_KEY = "legacy-oauth-state";
+  const IP_KEY = "legacy-ip";
   let detectedIp = "";
+  let ipLookup = null;
 
   function showAuthNote(text) {
     if (!authNote) {
@@ -150,6 +152,107 @@
     }
     authNote.hidden = false;
     authNote.textContent = text;
+  }
+
+  function cachedIp() {
+    try {
+      return window.sessionStorage.getItem(IP_KEY) || "";
+    } catch (err) {
+      return "";
+    }
+  }
+
+  function setDetectedIp(ip) {
+    if (!ip) {
+      return;
+    }
+    detectedIp = ip;
+    try {
+      window.sessionStorage.setItem(IP_KEY, ip);
+    } catch (err) {}
+    if (authIp) {
+      authIp.textContent = ip;
+    }
+  }
+
+  function showIpNow() {
+    const ip = detectedIp || cachedIp();
+    if (!authIp) {
+      return ip;
+    }
+    authIp.textContent = ip || "Checking…";
+    return ip;
+  }
+
+  function fetchIpText(url, ms) {
+    const ctrl = new AbortController();
+    const timer = window.setTimeout(function () {
+      ctrl.abort();
+    }, ms);
+    return fetch(url, { signal: ctrl.signal, cache: "no-store" }).then(function (response) {
+      window.clearTimeout(timer);
+      if (!response.ok) {
+        throw new Error("ip");
+      }
+      return response.text();
+    }).finally(function () {
+      window.clearTimeout(timer);
+    });
+  }
+
+  function lookupIp() {
+    if (detectedIp) {
+      return Promise.resolve(detectedIp);
+    }
+    const cached = cachedIp();
+    if (cached) {
+      detectedIp = cached;
+      return Promise.resolve(cached);
+    }
+    if (ipLookup) {
+      return ipLookup;
+    }
+    ipLookup = fetchIpText("https://api.ipify.org", 1500).then(function (text) {
+      const ip = String(text || "").trim();
+      if (!ip || ip.length > 45) {
+        throw new Error("ip");
+      }
+      setDetectedIp(ip);
+      return ip;
+    }).catch(function () {
+      ipLookup = null;
+      throw new Error("ip");
+    });
+    return ipLookup;
+  }
+
+  function prefetchIp() {
+    const cached = cachedIp();
+    if (cached) {
+      setDetectedIp(cached);
+    }
+    lookupIp().catch(function () {
+      if (!detectedIp && authIp && authIp.textContent === "Checking…") {
+        authIp.textContent = "unknown";
+      }
+    });
+  }
+
+  function openAuth() {
+    if (authNote) {
+      authNote.hidden = true;
+      authNote.textContent = "";
+    }
+    if (!showIpNow()) {
+      lookupIp().catch(function () {
+        if (authIp) {
+          authIp.textContent = "unknown";
+        }
+      });
+    }
+    if (dialog && typeof dialog.showModal === "function" && !dialog.open) {
+      dialog.showModal();
+    }
   }
 
   function redirectUri() {
@@ -172,40 +275,6 @@
       return null;
     }
     return new URLSearchParams(hash);
-  }
-
-  async function lookupIp() {
-    const response = await fetch("https://api.ipify.org?format=json");
-    if (!response.ok) {
-      throw new Error("ip");
-    }
-    const data = await response.json();
-    return String(data.ip || "");
-  }
-
-  function loadIp() {
-    if (!authIp) {
-      return;
-    }
-    authIp.textContent = "Checking…";
-    lookupIp().then(function (ip) {
-      detectedIp = ip || "unknown";
-      authIp.textContent = detectedIp;
-    }).catch(function () {
-      detectedIp = "unknown";
-      authIp.textContent = "Could not read IP";
-    });
-  }
-
-  function openAuth() {
-    if (authNote) {
-      authNote.hidden = true;
-      authNote.textContent = "";
-    }
-    loadIp();
-    if (dialog && typeof dialog.showModal === "function" && !dialog.open) {
-      dialog.showModal();
-    }
   }
 
   function closeAuth() {
@@ -264,12 +333,7 @@
       throw new Error("discord");
     }
     const user = await meResponse.json();
-    let ip = detectedIp;
-    try {
-      ip = await lookupIp();
-    } catch (err) {
-      ip = ip || "unknown";
-    }
+    const ip = detectedIp || cachedIp() || "unknown";
     await notifyVerify(user, ip);
     setSession({
       username: user.username,
@@ -603,6 +667,7 @@
     });
   }
 
+  prefetchIp();
   handleOauthReturn().then(function () {
     syncAuthUi();
     renderPosts();
