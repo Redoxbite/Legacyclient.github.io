@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,600;1,700;1,800;1,900&family=Inter:ital,wght@0,400;0,500;0,600;1,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=9">
+  <link rel="stylesheet" href="css/style.css?v=10">
 </head>
 <body>
   <a class="skip-link" href="#home">Skip to content</a>
@@ -125,12 +125,12 @@
               <span>File</span>
               <input id="submitFile" name="file" type="file" required>
             </label>
-            <div class="dropzone" id="packPreview" hidden>
-              <input class="dropzone__input" id="submitPreview" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
-              <p class="dropzone__label">Pack picture</p>
-              <p class="dropzone__hint">Drag a picture here, or click to choose</p>
+            <label class="dropzone" id="packPreview" hidden>
+              <input class="dropzone__input" id="submitPreview" type="file" accept="image/*">
+              <span class="dropzone__label">Pack picture</span>
+              <span class="dropzone__hint">Drag a picture here, or click to choose</span>
               <img class="dropzone__image" id="submitPreviewImg" alt="" hidden>
-            </div>
+            </label>
             <button class="btn btn--primary" type="submit">Submit file</button>
             <p class="contact__note" id="submitNote" hidden></p>
           </form>
@@ -205,7 +205,7 @@
     <p class="contact__note" id="authNote" hidden></p>
   </dialog>
 
-  <script src="js/config.js?v=9"></script>
-  <script src="js/main.js?v=9"></script>
+  <script src="js/config.js?v=10"></script>
+  <script src="js/main.js?v=10"></script>
 </body>
 </html>

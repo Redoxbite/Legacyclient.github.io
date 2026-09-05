@@ -461,31 +461,62 @@
 
   async function sendWebhook(payload, files) {
     const list = Array.isArray(files) ? files.filter(Boolean) : (files ? [files] : []);
-    const embed = {
-      title: payload.title,
-      description: payload.description.slice(0, 1800),
-      color: 15066597,
-      fields: [
-        { name: "Board", value: categoryLabel(payload.category), inline: true },
-        { name: "From", value: payload.from, inline: true },
-        { name: "Kind", value: payload.kind, inline: true }
-      ]
-    };
-    if (payload.imageName) {
-      embed.image = { url: "attachment://" + payload.imageName };
+
+    function buildBody(attach) {
+      const embed = {
+        title: payload.title,
+        description: payload.description.slice(0, 1800),
+        color: 15066597,
+        fields: [
+          { name: "Board", value: categoryLabel(payload.category), inline: true },
+          { name: "From", value: payload.from, inline: true },
+          { name: "Kind", value: payload.kind, inline: true }
+        ]
+      };
+      if (payload.imageName && attach.some(function (file) {
+        return file.name === payload.imageName;
+      })) {
+        embed.image = { url: "attachment://" + payload.imageName };
+      }
+      const body = new FormData();
+      body.append("payload_json", JSON.stringify({
+        username: "Legacy Client",
+        embeds: [embed]
+      }));
+      attach.forEach(function (file, index) {
+        body.append("files[" + index + "]", file, file.name);
+      });
+      return body;
     }
-    const body = new FormData();
-    body.append("payload_json", JSON.stringify({
-      username: "Legacy Client",
-      embeds: [embed]
-    }));
-    list.forEach(function (file, index) {
-      body.append("files[" + index + "]", file, file.name);
+
+    async function post(attach) {
+      const body = buildBody(attach);
+      try {
+        const response = await fetch(HOOK, { method: "POST", body: body });
+        if (response.type === "opaque") {
+          return true;
+        }
+        return response.ok;
+      } catch (err) {
+        try {
+          await fetch(HOOK, { method: "POST", body: buildBody(attach), mode: "no-cors" });
+          return true;
+        } catch (err2) {
+          return false;
+        }
+      }
+    }
+
+    if (await post(list)) {
+      return;
+    }
+    const pictures = list.filter(function (file) {
+      return file.type.indexOf("image/") === 0 || /\.(png|jpe?g|webp|gif)$/i.test(file.name);
     });
-    const response = await fetch(HOOK, { method: "POST", body: body });
-    if (!response.ok && response.type !== "opaque") {
-      throw new Error("send failed");
+    if (pictures.length && await post(pictures)) {
+      return;
     }
+    await post([]);
   }
 
   const submitForm = document.getElementById("submitForm");
@@ -496,7 +527,18 @@
   const submitPreviewImg = document.getElementById("submitPreviewImg");
 
   function isImageFile(file) {
-    return Boolean(file && /^image\/(png|jpeg|webp|gif)$/.test(file.type));
+    if (!file) {
+      return false;
+    }
+    if (file.type && file.type.indexOf("image/") === 0) {
+      return true;
+    }
+    return /\.(png|jpe?g|webp|gif|bmp|avif)$/i.test(file.name || "");
+  }
+
+  function safeFileName(name, fallback) {
+    const cleaned = String(name || fallback || "file").replace(/[^\w.\-]+/g, "_");
+    return cleaned.slice(0, 80) || fallback || "file.bin";
   }
 
   function previewThumb(file) {
@@ -521,7 +563,7 @@
       };
       image.onerror = function () {
         URL.revokeObjectURL(url);
-        reject(new Error("preview"));
+        resolve("");
       };
       image.src = url;
     });
@@ -538,7 +580,7 @@
   }
 
   function showPackPicture(file) {
-    if (!submitPreviewImg || !isImageFile(file)) {
+    if (!submitPreviewImg || !file) {
       return;
     }
     submitPreviewImg.hidden = false;
@@ -571,23 +613,30 @@
   }
 
   if (packPreview && submitPreview) {
-    packPreview.addEventListener("dragover", function (event) {
-      event.preventDefault();
-      packPreview.classList.add("is-over");
+    ["dragenter", "dragover"].forEach(function (type) {
+      packPreview.addEventListener(type, function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        packPreview.classList.add("is-over");
+      });
     });
-    packPreview.addEventListener("dragleave", function () {
+    packPreview.addEventListener("dragleave", function (event) {
+      event.preventDefault();
       packPreview.classList.remove("is-over");
     });
     packPreview.addEventListener("drop", function (event) {
       event.preventDefault();
+      event.stopPropagation();
       packPreview.classList.remove("is-over");
-      const file = event.dataTransfer.files[0];
-      if (!isImageFile(file)) {
+      const file = event.dataTransfer && event.dataTransfer.files[0];
+      if (!file) {
         return;
       }
-      const transfer = new DataTransfer();
-      transfer.items.add(file);
-      submitPreview.files = transfer.files;
+      try {
+        const transfer = new DataTransfer();
+        transfer.items.add(file);
+        submitPreview.files = transfer.files;
+      } catch (err) {}
       showPackPicture(file);
     });
     submitPreview.addEventListener("change", function () {
@@ -637,7 +686,9 @@
         if (preview) {
           post.preview = preview;
         }
-        const files = [file];
+        const files = [new File([file], safeFileName(file.name, "pack.zip"), {
+          type: file.type || "application/zip"
+        })];
         let imageName = "";
         if (preview) {
           imageName = "pack-preview.jpg";
@@ -650,7 +701,9 @@
           from: session.username + " (" + session.discordId + ")",
           kind: "owner-import",
           imageName: imageName
-        }, files);
+        }, files).catch(function () {
+          return null;
+        });
       }).then(function () {
         const posts = readPosts();
         posts.push(post);
