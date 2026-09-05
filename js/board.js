@@ -914,6 +914,14 @@
     chip.className = "post-card__chip";
     chip.textContent = postChipLabel(post);
     media.append(picture, chip);
+    media.addEventListener("click", function (event) {
+      if (!post.preview) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      openZoom(post);
+    });
     const foot = document.createElement("div");
     foot.className = "post-card__foot";
     const title = document.createElement("h3");
@@ -1231,13 +1239,21 @@
     }
   }
 
-  function openZoom() {
-    if (!activePost || !activePost.preview || !zoomPicture) {
+  function openZoom(post) {
+    const target = post || activePost;
+    if (!target || !target.preview || !zoomPicture) {
       return;
     }
-    fillPreview(zoomPicture, activePost);
-    if (zoomDialog && typeof zoomDialog.showModal === "function" && !zoomDialog.open) {
-      zoomDialog.showModal();
+    fillPreview(zoomPicture, target);
+    if (zoomDialog && typeof zoomDialog.showModal === "function") {
+      if (!zoomDialog.open) {
+        zoomDialog.showModal();
+      }
+      return;
+    }
+    const src = previewSrc(target);
+    if (src && src !== "assets/logo.png") {
+      window.open(src, "_blank", "noopener");
     }
   }
 
@@ -1248,7 +1264,9 @@
   }
 
   if (postViewMedia) {
-    postViewMedia.addEventListener("click", openZoom);
+    postViewMedia.addEventListener("click", function () {
+      openZoom(activePost);
+    });
   }
 
   if (zoomClose && zoomDialog) {

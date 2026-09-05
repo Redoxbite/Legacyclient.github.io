@@ -547,6 +547,7 @@ main {
   position: relative;
   aspect-ratio: var(--shot-ratio);
   background: var(--tile-media);
+  cursor: zoom-in;
 }
 
 .post-card__picture {
@@ -1045,6 +1046,7 @@ main {
   bottom: 0.75rem;
   color: var(--muted);
   font-size: var(--text-xs);
+  pointer-events: none;
 }
 
 .desk__title {
@@ -1169,6 +1171,7 @@ main {
 
 .zoom {
   position: relative;
+  z-index: 120;
   width: min(72rem, 96vw);
   max-height: 96vh;
   padding: 2.4rem 1.2rem 1.2rem;
@@ -1182,6 +1185,7 @@ main {
   max-height: 88vh;
   margin: 0 auto;
   object-fit: contain;
+  cursor: zoom-in;
 }
 
 .ctx[hidden] {
