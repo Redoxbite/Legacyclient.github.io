@@ -461,6 +461,10 @@ main {
   margin-bottom: 1rem;
 }
 
+.filters--pack {
+  margin-top: -0.35rem;
+}
+
 .search {
   display: block;
   margin-bottom: 2.5rem;
@@ -658,7 +662,8 @@ main {
   font-size: var(--text-sm);
 }
 
-.file-field input {
+.file-field input,
+.file-field select {
   color: var(--text);
 }
 

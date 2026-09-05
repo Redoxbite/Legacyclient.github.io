@@ -10,6 +10,11 @@
     packs: "Texture packs",
     other: "Other"
   };
+  const PACK_TYPES = {
+    sky: "Sky texture packs",
+    pvp: "PvP packs",
+    custom: "Custom packs"
+  };
   let activePost = null;
   let openingPost = false;
   let pendingDownload = null;
@@ -230,6 +235,7 @@
       fileName: post.fileName,
       fileSize: post.fileSize,
       filePath: post.filePath || "",
+      packType: post.category === "packs" ? packTypeOf(post) : "",
       preview: isHttpUrl(post.preview) ? post.preview : "",
       createdAt: post.createdAt,
       downloads: post.downloads || 0,
@@ -254,6 +260,7 @@
       }
       return Object.assign({}, entry, {
         preview: published.preview || entry.preview,
+        packType: published.packType || entry.packType,
         filePath: published.filePath || entry.filePath,
         files: published.files || entry.files
       });
@@ -794,6 +801,53 @@
     return LABELS[key] || key;
   }
 
+  function packTypeOf(post) {
+    const kind = post && post.packType;
+    if (kind === "sky" || kind === "pvp" || kind === "custom") {
+      return kind;
+    }
+    const title = String((post && post.title) || "").toLowerCase();
+    if (title.indexOf("sky") !== -1) {
+      return "sky";
+    }
+    if (title.indexOf("pvp") !== -1) {
+      return "pvp";
+    }
+    return "custom";
+  }
+
+  function packTypeLabel(kind) {
+    return PACK_TYPES[kind] || PACK_TYPES.custom;
+  }
+
+  function postChipLabel(post) {
+    if (post && post.category === "packs") {
+      return packTypeLabel(packTypeOf(post));
+    }
+    return categoryLabel(post && post.category);
+  }
+
+  function parseBoardHash() {
+    const hash = (window.location.hash || "#home").replace("#", "");
+    if (hash.indexOf("access_token=") !== -1 || hash.indexOf("post-") === 0) {
+      return { filter: "all", packType: "" };
+    }
+    if (hash === "packs-sky" || hash === "packs-pvp" || hash === "packs-custom") {
+      return { filter: "packs", packType: hash.slice(6) };
+    }
+    if (hash === "scammers" || hash === "packs" || hash === "other") {
+      return { filter: hash, packType: "" };
+    }
+    return { filter: "all", packType: "" };
+  }
+
+  function packHash(post) {
+    if (!post || post.category !== "packs") {
+      return post && post.category ? post.category : "home";
+    }
+    return "packs-" + packTypeOf(post);
+  }
+
   function timeAgo(stamp) {
     const delta = Date.now() - stamp;
     const mins = Math.floor(delta / 60000);
@@ -829,7 +883,7 @@
     });
     const chip = document.createElement("span");
     chip.className = "post-card__chip";
-    chip.textContent = categoryLabel(post.category);
+    chip.textContent = postChipLabel(post);
     media.append(picture, chip);
     const foot = document.createElement("div");
     foot.className = "post-card__foot";
@@ -913,13 +967,11 @@
   }
 
   function closePost(fromHash) {
-    const category = activePost && activePost.category;
+    const post = activePost;
     activePost = null;
     showPostPage(false);
     if (!fromHash) {
-      const next = category === "scammers" || category === "packs" || category === "other"
-        ? category
-        : "home";
+      const next = packHash(post);
       if (postIdFromHash()) {
         window.location.hash = next;
       }
@@ -1116,7 +1168,7 @@
       postViewMedia.disabled = !hasPreview;
     }
     if (postViewCategory) {
-      postViewCategory.textContent = categoryLabel(post.category);
+      postViewCategory.textContent = postChipLabel(post);
     }
     if (postViewTitle) {
       postViewTitle.textContent = post.title;
@@ -1172,6 +1224,7 @@
   const editClose = document.getElementById("editClose");
   const editTitle = document.getElementById("editTitle");
   const editCategory = document.getElementById("editCategory");
+  const editPackType = document.getElementById("editPackType");
   const editDesc = document.getElementById("editDesc");
   const editFile = document.getElementById("editFile");
   const editExtra = document.getElementById("editExtra");
@@ -1223,6 +1276,10 @@
     if (editCategory) {
       editCategory.value = post.category || "packs";
     }
+    if (editPackType) {
+      editPackType.value = packTypeOf(post);
+    }
+    syncPackTypeFields();
     if (editDesc) {
       editDesc.value = post.description || "";
     }
@@ -1345,7 +1402,10 @@
   }
 
   if (editCategory) {
-    editCategory.addEventListener("change", syncEditPicture);
+    editCategory.addEventListener("change", function () {
+      syncEditPicture();
+      syncPackTypeFields();
+    });
   }
 
   if (editPackPreview && editPreview) {
@@ -1394,6 +1454,9 @@
         title: editTitle.value.trim(),
         description: editDesc.value.trim(),
         category: editCategory.value,
+        packType: editCategory.value === "packs"
+          ? ((document.getElementById("editPackType") || {}).value || "custom")
+          : "",
         fileName: editPost.fileName,
         fileSize: editPost.fileSize,
         filePath: editPost.filePath,
@@ -1505,14 +1568,7 @@
   }
 
   function activeFilter() {
-    const hash = (window.location.hash || "#home").replace("#", "");
-    if (hash.indexOf("access_token=") !== -1 || hash.indexOf("post-") === 0) {
-      return "all";
-    }
-    if (hash === "scammers" || hash === "packs" || hash === "other") {
-      return hash;
-    }
-    return "all";
+    return parseBoardHash().filter;
   }
 
   function renderPosts() {
@@ -1520,7 +1576,9 @@
     const ownerList = document.getElementById("ownerPostList");
     const search = (document.getElementById("searchInput") || {}).value || "";
     const query = search.trim().toLowerCase();
-    const filter = activeFilter();
+    const board = parseBoardHash();
+    const filter = board.filter;
+    const packType = board.packType;
     const posts = readPosts()
       .slice()
       .sort(function (a, b) {
@@ -1530,12 +1588,15 @@
         if (filter !== "all" && post.category !== filter) {
           return false;
         }
+        if (filter === "packs" && packType && packTypeOf(post) !== packType) {
+          return false;
+        }
         if (!query) {
           return true;
         }
-        return (post.title + " " + post.description + " " + post.category)
-          .toLowerCase()
-          .indexOf(query) !== -1;
+        const hay = post.title + " " + post.description + " " + post.category + " " +
+          (post.category === "packs" ? packTypeLabel(packTypeOf(post)) : "");
+        return hay.toLowerCase().indexOf(query) !== -1;
       });
 
     const scammers = readPosts().filter(function (p) { return p.category === "scammers"; }).length;
@@ -1543,6 +1604,7 @@
     const scammerCount = document.getElementById("scammerCount");
     const packCount = document.getElementById("packCount");
     const listTitle = document.getElementById("listTitle");
+    const packFilters = document.getElementById("packFilters");
     if (scammerCount) {
       scammerCount.textContent = scammers + " posted";
     }
@@ -1550,7 +1612,14 @@
       packCount.textContent = packs + " posted";
     }
     if (listTitle) {
-      listTitle.textContent = filter === "all" ? "All posts" : categoryLabel(filter);
+      if (filter === "packs" && packType) {
+        listTitle.textContent = packTypeLabel(packType);
+      } else {
+        listTitle.textContent = filter === "all" ? "All posts" : categoryLabel(filter);
+      }
+    }
+    if (packFilters) {
+      packFilters.hidden = filter !== "packs";
     }
 
     function fill(target) {
@@ -1576,12 +1645,23 @@
     document.querySelectorAll("[data-filter]").forEach(function (btn) {
       btn.classList.toggle("is-on", btn.getAttribute("data-filter") === filter);
     });
+    document.querySelectorAll("[data-pack-type]").forEach(function (btn) {
+      const kind = btn.getAttribute("data-pack-type") || "";
+      btn.classList.toggle("is-on", kind === packType);
+    });
   }
 
   document.querySelectorAll("[data-filter]").forEach(function (btn) {
     btn.addEventListener("click", function () {
       const key = btn.getAttribute("data-filter");
       window.location.hash = key === "all" ? "home" : key;
+    });
+  });
+
+  document.querySelectorAll("[data-pack-type]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      const kind = btn.getAttribute("data-pack-type") || "";
+      window.location.hash = kind ? "packs-" + kind : "packs";
     });
   });
 
@@ -1824,11 +1904,33 @@
     if (packPreview) {
       packPreview.hidden = false;
     }
+    syncPackTypeFields();
+  }
+
+  function syncPackTypeFields() {
+    const submitWrap = document.getElementById("submitPackTypeWrap");
+    const importWrap = document.getElementById("importPackTypeWrap");
+    const editWrap = document.getElementById("editPackTypeWrap");
+    if (submitWrap && submitCategory) {
+      submitWrap.hidden = submitCategory.value !== "packs";
+    }
+    const importCategory = document.getElementById("importCategory");
+    if (importWrap && importCategory) {
+      importWrap.hidden = importCategory.value !== "packs";
+    }
+    if (editWrap && editCategory) {
+      editWrap.hidden = editCategory.value !== "packs";
+    }
   }
 
   if (submitCategory) {
     submitCategory.addEventListener("change", syncPackPreview);
     syncPackPreview();
+  }
+
+  const importCategoryEl = document.getElementById("importCategory");
+  if (importCategoryEl) {
+    importCategoryEl.addEventListener("change", syncPackTypeFields);
   }
 
   if (packPreview && submitPreview) {
@@ -1897,6 +1999,9 @@
         title: title,
         description: description,
         category: category,
+        packType: category === "packs"
+          ? ((document.getElementById("submitPackType") || {}).value || "custom")
+          : "",
         fileName: file.name,
         fileSize: file.size,
         downloads: 0,
@@ -1988,6 +2093,9 @@
         title: title,
         description: description,
         category: category,
+        packType: category === "packs"
+          ? ((document.getElementById("importPackType") || {}).value || "custom")
+          : "",
         fileName: file.name,
         fileSize: file.size,
         downloads: 0,

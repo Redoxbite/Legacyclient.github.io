@@ -18,7 +18,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,600;1,700;1,800;1,900&family=Inter:ital,wght@0,400;0,500;0,600;1,700&display=swap" rel="stylesheet">
   <meta http-equiv="Cache-Control" content="no-store">
-  <link rel="stylesheet" href="css/board.css?v=desk9">
+  <link rel="stylesheet" href="css/board.css?v=desk10">
 </head>
 <body>
   <a class="skip-link" href="#home">Skip to content</a>
@@ -71,6 +71,12 @@
             <button class="chip chip--btn" type="button" data-filter="packs">Texture packs</button>
             <button class="chip chip--btn" type="button" data-filter="other">Other</button>
           </div>
+          <div class="filters filters--pack" id="packFilters" hidden role="tablist" aria-label="Texture pack types">
+            <button class="chip chip--btn is-on" type="button" data-pack-type="">All packs</button>
+            <button class="chip chip--btn" type="button" data-pack-type="sky">Sky texture packs</button>
+            <button class="chip chip--btn" type="button" data-pack-type="pvp">PvP packs</button>
+            <button class="chip chip--btn" type="button" data-pack-type="custom">Custom packs</button>
+          </div>
           <label class="search">
             <span class="visually-hidden">Search</span>
             <input class="contact__field" id="searchInput" type="search" placeholder="Search">
@@ -120,6 +126,14 @@
               <option value="packs">Texture packs</option>
               <option value="other">Other</option>
             </select>
+            <label class="file-field" id="submitPackTypeWrap" hidden for="submitPackType">
+              <span>Pack type</span>
+              <select class="contact__field" id="submitPackType" name="packType">
+                <option value="sky">Sky texture packs</option>
+                <option value="pvp">PvP packs</option>
+                <option value="custom">Custom packs</option>
+              </select>
+            </label>
             <label class="visually-hidden" for="submitDesc">Description</label>
             <textarea class="contact__field" id="submitDesc" name="description" rows="4" placeholder="Description" required maxlength="1200"></textarea>
             <label class="file-field">
@@ -160,6 +174,14 @@
               <option value="packs">Texture packs</option>
               <option value="other">Other</option>
             </select>
+            <label class="file-field" id="importPackTypeWrap" hidden for="importPackType">
+              <span>Pack type</span>
+              <select class="contact__field" id="importPackType" name="packType">
+                <option value="sky">Sky texture packs</option>
+                <option value="pvp">PvP packs</option>
+                <option value="custom">Custom packs</option>
+              </select>
+            </label>
             <label class="visually-hidden" for="importDesc">Description</label>
             <textarea class="contact__field" id="importDesc" name="description" rows="4" placeholder="Description" required maxlength="1200"></textarea>
             <label class="file-field">
@@ -259,6 +281,14 @@
         <option value="packs">Texture packs</option>
         <option value="other">Other</option>
       </select>
+      <label class="file-field" id="editPackTypeWrap" hidden for="editPackType">
+        <span>Pack type</span>
+        <select class="contact__field" id="editPackType" name="packType">
+          <option value="sky">Sky texture packs</option>
+          <option value="pvp">PvP packs</option>
+          <option value="custom">Custom packs</option>
+        </select>
+      </label>
       <label class="visually-hidden" for="editDesc">Description</label>
       <textarea class="contact__field" id="editDesc" name="description" rows="4" placeholder="Description" required maxlength="1200"></textarea>
       <label class="file-field">
@@ -280,8 +310,8 @@
     </form>
   </dialog>
 
-  <script src="js/config.js?v=desk9"></script>
-  <script src="js/cloud.js?v=desk9"></script>
-  <script src="js/board.js?v=desk9"></script>
+  <script src="js/config.js?v=desk10"></script>
+  <script src="js/cloud.js?v=desk10"></script>
+  <script src="js/board.js?v=desk10"></script>
 </body>
 </html>
