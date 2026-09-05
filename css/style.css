@@ -186,7 +186,8 @@ select {
 .btn:focus-visible,
 .contact__field:focus-visible,
 .auth__close:focus-visible,
-.chip--btn:focus-visible {
+.chip--btn:focus-visible,
+.dropzone:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
@@ -544,6 +545,68 @@ main {
 
 .file-field input {
   color: var(--text);
+}
+
+.dropzone {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  min-height: 9rem;
+  padding: 1.1rem 1rem;
+  border: 1px dashed var(--stroke-strong);
+  border-radius: 0.8rem;
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--text-secondary);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--speed) var(--ease), background var(--speed) var(--ease);
+}
+
+.dropzone:hover,
+.dropzone:focus-visible,
+.dropzone.is-over {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+}
+
+.dropzone:active {
+  transform: scale(0.99);
+}
+
+.dropzone__input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.dropzone__label {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.dropzone__hint {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.dropzone__image {
+  width: min(100%, 16rem);
+  max-height: 10rem;
+  object-fit: contain;
+  border-radius: 0.5rem;
+}
+
+.post-card__preview {
+  width: 100%;
+  height: 10rem;
+  object-fit: cover;
+  border-radius: 0.65rem;
+  margin-bottom: 0.85rem;
 }
 
 .contact__note {

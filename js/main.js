@@ -334,6 +334,13 @@
   function postCard(post) {
     const article = document.createElement("article");
     article.className = "post-card glass";
+    if (post.preview) {
+      const img = document.createElement("img");
+      img.className = "post-card__preview";
+      img.src = post.preview;
+      img.alt = "";
+      article.append(img);
+    }
     const title = document.createElement("h3");
     title.textContent = post.title;
     const copy = document.createElement("p");
@@ -456,24 +463,29 @@
     return "";
   }
 
-  async function sendWebhook(payload, file) {
+  async function sendWebhook(payload, files) {
+    const list = Array.isArray(files) ? files.filter(Boolean) : (files ? [files] : []);
+    const embed = {
+      title: payload.title,
+      description: payload.description.slice(0, 1800),
+      color: 15066597,
+      fields: [
+        { name: "Board", value: categoryLabel(payload.category), inline: true },
+        { name: "From", value: payload.from, inline: true },
+        { name: "Kind", value: payload.kind, inline: true }
+      ]
+    };
+    if (payload.imageName) {
+      embed.image = { url: "attachment://" + payload.imageName };
+    }
     const body = new FormData();
     body.append("payload_json", JSON.stringify({
       username: "Legacy Client",
-      embeds: [{
-        title: payload.title,
-        description: payload.description.slice(0, 1800),
-        color: 15066597,
-        fields: [
-          { name: "Board", value: categoryLabel(payload.category), inline: true },
-          { name: "From", value: payload.from, inline: true },
-          { name: "Kind", value: payload.kind, inline: true }
-        ]
-      }]
+      embeds: [embed]
     }));
-    if (file) {
-      body.append("files[0]", file, file.name);
-    }
+    list.forEach(function (file, index) {
+      body.append("files[" + index + "]", file, file.name);
+    });
     const response = await fetch(HOOK, { method: "POST", body: body });
     if (!response.ok && response.type !== "opaque") {
       throw new Error("send failed");
@@ -482,6 +494,104 @@
 
   const submitForm = document.getElementById("submitForm");
   const submitNote = document.getElementById("submitNote");
+  const submitCategory = document.getElementById("submitCategory");
+  const packPreview = document.getElementById("packPreview");
+  const submitPreview = document.getElementById("submitPreview");
+  const submitPreviewImg = document.getElementById("submitPreviewImg");
+
+  function isImageFile(file) {
+    return Boolean(file && /^image\/(png|jpeg|webp|gif)$/.test(file.type));
+  }
+
+  function previewThumb(file) {
+    return new Promise(function (resolve, reject) {
+      const image = new Image();
+      const url = URL.createObjectURL(file);
+      image.onload = function () {
+        const canvas = document.createElement("canvas");
+        const max = 640;
+        let width = image.width;
+        let height = image.height;
+        if (width > max || height > max) {
+          const scale = max / Math.max(width, height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(image, 0, 0, width, height);
+        URL.revokeObjectURL(url);
+        resolve(canvas.toDataURL("image/jpeg", 0.82));
+      };
+      image.onerror = function () {
+        URL.revokeObjectURL(url);
+        reject(new Error("preview"));
+      };
+      image.src = url;
+    });
+  }
+
+  function showPackPicture(file) {
+    if (!submitPreviewImg || !isImageFile(file)) {
+      return;
+    }
+    submitPreviewImg.hidden = false;
+    submitPreviewImg.src = URL.createObjectURL(file);
+  }
+
+  function clearPackPicture() {
+    if (submitPreview) {
+      submitPreview.value = "";
+    }
+    if (submitPreviewImg) {
+      submitPreviewImg.hidden = true;
+      submitPreviewImg.removeAttribute("src");
+    }
+  }
+
+  function syncPackPreview() {
+    const packs = submitCategory && submitCategory.value === "packs";
+    if (packPreview) {
+      packPreview.hidden = !packs;
+    }
+    if (!packs) {
+      clearPackPicture();
+    }
+  }
+
+  if (submitCategory) {
+    submitCategory.addEventListener("change", syncPackPreview);
+    syncPackPreview();
+  }
+
+  if (packPreview && submitPreview) {
+    packPreview.addEventListener("dragover", function (event) {
+      event.preventDefault();
+      packPreview.classList.add("is-over");
+    });
+    packPreview.addEventListener("dragleave", function () {
+      packPreview.classList.remove("is-over");
+    });
+    packPreview.addEventListener("drop", function (event) {
+      event.preventDefault();
+      packPreview.classList.remove("is-over");
+      const file = event.dataTransfer.files[0];
+      if (!isImageFile(file)) {
+        return;
+      }
+      const transfer = new DataTransfer();
+      transfer.items.add(file);
+      submitPreview.files = transfer.files;
+      showPackPicture(file);
+    });
+    submitPreview.addEventListener("change", function () {
+      const file = submitPreview.files[0];
+      if (file) {
+        showPackPicture(file);
+      }
+    });
+  }
+
   if (submitForm) {
     submitForm.addEventListener("submit", function (event) {
       event.preventDefault();
@@ -494,14 +604,32 @@
       const category = document.getElementById("submitCategory").value;
       const description = document.getElementById("submitDesc").value.trim();
       const file = document.getElementById("submitFile").files[0];
+      const picture = submitPreview ? submitPreview.files[0] : null;
       const err = checkFile(file);
       if (err) {
         submitNote.hidden = false;
         submitNote.textContent = err;
         return;
       }
+      if (category === "packs" && !isImageFile(picture)) {
+        submitNote.hidden = false;
+        submitNote.textContent = "Drag a pack picture first.";
+        return;
+      }
+      if (picture && picture.size > MAX_BYTES) {
+        submitNote.hidden = false;
+        submitNote.textContent = "Picture must be under 8 MB.";
+        return;
+      }
       submitNote.hidden = false;
       submitNote.textContent = "Publishing…";
+      const files = [file];
+      let imageName = "";
+      if (picture) {
+        const ext = (picture.name.split(".").pop() || "png").toLowerCase();
+        imageName = "pack-preview." + ext;
+        files.push(new File([picture], imageName, { type: picture.type }));
+      }
       const post = {
         id: String(Date.now()),
         title: title,
@@ -510,17 +638,26 @@
         fileName: file.name,
         createdAt: Date.now()
       };
-      sendWebhook({
-        title: title,
-        description: description,
-        category: category,
-        from: session.username + " (" + session.discordId + ")",
-        kind: "owner-import"
-      }, file).then(function () {
+      const previewReady = picture ? previewThumb(picture) : Promise.resolve("");
+      previewReady.then(function (preview) {
+        if (preview) {
+          post.preview = preview;
+        }
+        return sendWebhook({
+          title: title,
+          description: description,
+          category: category,
+          from: session.username + " (" + session.discordId + ")",
+          kind: "owner-import",
+          imageName: imageName
+        }, files);
+      }).then(function () {
         const posts = readPosts();
         posts.push(post);
         writeJson(POSTS_KEY, posts);
         submitForm.reset();
+        clearPackPicture();
+        syncPackPreview();
         submitNote.textContent = "Published to " + categoryLabel(category) + ".";
         renderPosts();
       }).catch(function () {

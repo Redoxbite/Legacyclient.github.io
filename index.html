@@ -125,6 +125,12 @@
               <span>File</span>
               <input id="submitFile" name="file" type="file" required>
             </label>
+            <div class="dropzone" id="packPreview" hidden>
+              <input class="dropzone__input" id="submitPreview" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
+              <p class="dropzone__label">Pack picture</p>
+              <p class="dropzone__hint">Drag a picture here, or click to choose</p>
+              <img class="dropzone__image" id="submitPreviewImg" alt="" hidden>
+            </div>
             <button class="btn btn--primary" type="submit">Submit file</button>
             <p class="contact__note" id="submitNote" hidden></p>
           </form>
