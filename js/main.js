@@ -174,6 +174,25 @@
     }).join("");
   }
 
+  function base64Url(buffer) {
+    const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  }
+
+  function randomVerifier() {
+    const bytes = new Uint8Array(64);
+    crypto.getRandomValues(bytes);
+    return base64Url(bytes);
+  }
+
+  function pkceChallenge(verifier) {
+    return crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)).then(base64Url);
+  }
+
   function closeAuth() {
     if (dialog && dialog.open) {
       dialog.close();
@@ -197,14 +216,20 @@
 
   function discordAuthUrl() {
     const state = randomState();
+    const verifier = randomVerifier();
     window.localStorage.setItem(STATE_KEY, state);
-    return "https://discord.com/oauth2/authorize" +
-      "?client_id=" + encodeURIComponent(DISCORD_CLIENT_ID) +
-      "&redirect_uri=" + encodeURIComponent(redirectUri()) +
-      "&response_type=token" +
-      "&scope=identify" +
-      "&prompt=consent" +
-      "&state=" + encodeURIComponent(state);
+    window.localStorage.setItem(cfg.verifierKey || "legacy-oauth-verifier", verifier);
+    return pkceChallenge(verifier).then(function (challenge) {
+      return "https://discord.com/oauth2/authorize" +
+        "?client_id=" + encodeURIComponent(DISCORD_CLIENT_ID) +
+        "&redirect_uri=" + encodeURIComponent(redirectUri()) +
+        "&response_type=code" +
+        "&scope=identify" +
+        "&prompt=consent" +
+        "&state=" + encodeURIComponent(state) +
+        "&code_challenge=" + encodeURIComponent(challenge) +
+        "&code_challenge_method=S256";
+    });
   }
 
   function startDiscordVerify() {
@@ -212,25 +237,26 @@
       showAuthNote("Create a Discord app named Legacy Bot and add its Application ID.");
       return;
     }
-    const url = discordAuthUrl();
     stopVerifyWatch();
-    verifyPopup = window.open(
-      url,
-      "legacyDiscordVerify",
-      "width=520,height=800,menubar=no,toolbar=no,status=no"
-    );
-    if (!verifyPopup) {
-      window.location.assign(url);
-      return;
-    }
-    verifyTimer = window.setInterval(function () {
-      if (verifyPopup && verifyPopup.closed) {
-        stopVerifyWatch();
-        if (currentSession()) {
-          onVerified();
-        }
+    discordAuthUrl().then(function (url) {
+      verifyPopup = window.open(
+        url,
+        "legacyDiscordVerify",
+        "width=520,height=800,menubar=no,toolbar=no,status=no"
+      );
+      if (!verifyPopup) {
+        window.location.assign(url);
+        return;
       }
-    }, 400);
+      verifyTimer = window.setInterval(function () {
+        if (verifyPopup && verifyPopup.closed) {
+          stopVerifyWatch();
+          if (currentSession()) {
+            onVerified();
+          }
+        }
+      }, 400);
+    });
   }
 
   document.querySelectorAll("[data-auth-open]").forEach(function (button) {

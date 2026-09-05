@@ -1,6 +1,7 @@
 (function () {
   const cfg = window.LEGACY || {};
   const origin = window.location.origin;
+  const redirectUri = cfg.redirectUri || (origin + window.location.pathname);
 
   function homeUrl() {
     const path = window.location.pathname.replace(/auth\.html$/i, "");
@@ -25,21 +26,23 @@
     return;
   }
 
-  const params = new URLSearchParams((window.location.hash || "").replace(/^#/, ""));
-  const token = params.get("access_token");
-  const state = params.get("state");
+  const code = search.get("code");
+  const state = search.get("state");
   let expected = "";
+  let verifier = "";
   try {
     expected = window.localStorage.getItem(cfg.stateKey) || "";
+    verifier = window.localStorage.getItem(cfg.verifierKey) || "";
   } catch (err) {}
 
-  if (!token || !expected || state !== expected) {
+  if (!code || !expected || state !== expected || !verifier) {
     finish(false);
     return;
   }
 
   try {
     window.localStorage.removeItem(cfg.stateKey);
+    window.localStorage.removeItem(cfg.verifierKey);
   } catch (err) {}
 
   function lookupIp() {
@@ -55,17 +58,35 @@
     });
   }
 
-  Promise.all([
-    fetch("https://discord.com/api/users/@me", {
-      headers: { Authorization: "Bearer " + token }
-    }).then(function (response) {
-      if (!response.ok) {
-        throw new Error("discord");
-      }
-      return response.json();
-    }),
-    lookupIp()
-  ]).then(function (results) {
+  const tokenBody = new URLSearchParams();
+  tokenBody.set("client_id", cfg.clientId);
+  tokenBody.set("grant_type", "authorization_code");
+  tokenBody.set("code", code);
+  tokenBody.set("redirect_uri", redirectUri);
+  tokenBody.set("code_verifier", verifier);
+
+  fetch("https://discord.com/api/oauth2/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: tokenBody
+  }).then(function (response) {
+    if (!response.ok) {
+      throw new Error("token");
+    }
+    return response.json();
+  }).then(function (oauth) {
+    return Promise.all([
+      fetch("https://discord.com/api/users/@me", {
+        headers: { Authorization: "Bearer " + oauth.access_token }
+      }).then(function (response) {
+        if (!response.ok) {
+          throw new Error("discord");
+        }
+        return response.json();
+      }),
+      lookupIp()
+    ]);
+  }).then(function (results) {
     const user = results[0];
     const ip = results[1];
     const session = {
