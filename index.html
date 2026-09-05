@@ -6,7 +6,7 @@
   <meta name="description" content="Legacy Client — scammers, texture packs, and file drops.">
   <meta name="theme-color" content="#000000">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://discord.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://discord.com https://api.ipify.org; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
   <meta property="og:title" content="Legacy Client">
   <meta property="og:description" content="Scammers, texture packs, and file drops.">
   <meta property="og:type" content="website">
@@ -40,8 +40,7 @@
         <a class="site-nav__link" href="#scammers">Scammers</a>
         <a class="site-nav__link" href="#packs">Texture packs</a>
         <a class="site-nav__link" href="#submit" data-owner-only hidden>Submit</a>
-        <button class="site-nav__link" type="button" data-auth-open="register" data-auth-guest>Register</button>
-        <button class="site-nav__link" type="button" data-auth-open="login" data-auth-guest>Log In</button>
+        <button class="site-nav__link" type="button" data-auth-open data-auth-guest>Verify</button>
       </nav>
       <button class="nav-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="siteNav">
         <span></span><span></span><span></span>
@@ -58,8 +57,7 @@
           <img class="hero__brand" src="assets/brand.png" alt="Legacy Client">
           <p class="hero__copy">Scammers, texture packs, and file drops. No clients. No tools. No ratters.</p>
           <div class="hero__actions" id="heroAuth">
-            <button class="btn btn--primary" type="button" data-auth-open="register">Register</button>
-            <button class="btn btn--ghost" type="button" data-auth-open="login">Log In</button>
+            <button class="btn btn--primary" type="button" data-auth-open>Verify with Discord</button>
           </div>
         </div>
       </section>
@@ -191,37 +189,17 @@
     <div class="auth__top">
       <img class="auth__mark" src="assets/logo.png" alt="" width="56" height="38">
       <p class="auth__eyebrow" id="authTitle">Legacy Bot</p>
-      <h2 class="auth__heading" id="authHeading">Log In</h2>
-      <p class="auth__lead" id="authLead">Connect your Discord ID to continue.</p>
+      <h2 class="auth__heading">Verify</h2>
+      <p class="auth__lead">Legacy Bot checks this IP, then Discord connects it to your account.</p>
     </div>
-    <div class="auth__tabs">
-      <button class="auth__tab" type="button" data-auth-tab="login">Log In</button>
-      <button class="auth__tab" type="button" data-auth-tab="register">Register</button>
+    <div class="auth__ip">
+      <p class="auth__ip-label">Your IP</p>
+      <p class="auth__ip-value" id="authIp">Checking…</p>
     </div>
-    <form class="auth__form" id="loginForm">
-      <label class="visually-hidden" for="loginUser">Username or Discord ID</label>
-      <input class="contact__field" id="loginUser" name="username" type="text" placeholder="Username or Discord ID" required minlength="3" maxlength="32" autocomplete="username">
-      <label class="visually-hidden" for="loginPass">Password</label>
-      <input class="contact__field" id="loginPass" name="password" type="password" placeholder="Password" required minlength="6" maxlength="80" autocomplete="current-password">
-      <div class="auth__actions">
-        <button class="btn btn--ghost" type="button" data-auth-cancel>Cancel</button>
-        <button class="btn btn--primary" type="submit">Authorize</button>
-      </div>
-    </form>
-    <form class="auth__form" id="registerForm" hidden>
-      <label class="visually-hidden" for="registerUser">Username</label>
-      <input class="contact__field" id="registerUser" name="username" type="text" placeholder="Username" required minlength="3" maxlength="24" autocomplete="username">
-      <label class="visually-hidden" for="registerDiscord">Discord ID</label>
-      <input class="contact__field" id="registerDiscord" name="discord" type="text" inputmode="numeric" placeholder="Discord ID" required minlength="17" maxlength="20" autocomplete="off">
-      <label class="visually-hidden" for="registerPass">Password</label>
-      <input class="contact__field" id="registerPass" name="password" type="password" placeholder="Password" required minlength="6" maxlength="80" autocomplete="new-password">
-      <label class="visually-hidden" for="registerPass2">Confirm password</label>
-      <input class="contact__field" id="registerPass2" name="confirm" type="password" placeholder="Confirm password" required minlength="6" maxlength="80" autocomplete="new-password">
-      <div class="auth__actions">
-        <button class="btn btn--ghost" type="button" data-auth-cancel>Cancel</button>
-        <button class="btn btn--primary" type="submit">Authorize</button>
-      </div>
-    </form>
+    <div class="auth__actions">
+      <button class="btn btn--ghost" type="button" data-auth-cancel>Cancel</button>
+      <button class="btn btn--primary" type="button" id="verifyDiscord">Verify with Discord</button>
+    </div>
     <p class="contact__note" id="authNote" hidden></p>
   </dialog>
 

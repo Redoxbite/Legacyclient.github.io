@@ -186,7 +186,6 @@ select {
 .btn:focus-visible,
 .contact__field:focus-visible,
 .auth__close:focus-visible,
-.auth__tab:focus-visible,
 .chip--btn:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
@@ -671,64 +670,31 @@ main {
 .auth__lead {
   color: var(--text-secondary);
   font-size: var(--text-sm);
-  max-width: 18rem;
+  max-width: 20rem;
 }
 
-.auth__tabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.4rem;
-  margin-bottom: 0.95rem;
+.auth__ip {
+  margin: 0 0 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.55rem;
+  background: #0a0a0c;
+  border: 1px solid #2f2f35;
+  text-align: center;
 }
 
-.auth__tab {
-  appearance: none;
-  min-height: 2.45rem;
-  border: 0;
-  border-radius: 0.45rem;
-  background: #1c1c21;
-  color: #b4b4bc;
+.auth__ip-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.auth__ip-value {
   font-family: var(--font-display);
   font-style: italic;
   font-weight: 800;
-  cursor: pointer;
-  transition: background var(--speed) var(--ease), color var(--speed) var(--ease);
-}
-
-.auth__tab:hover,
-.auth__tab:focus-visible {
-  color: var(--text);
-  background: #26262c;
-}
-
-.auth__tab.is-active,
-.auth__tab.is-active:hover,
-.auth__tab.is-active:focus-visible {
-  color: #000000;
-  background: var(--accent);
-}
-
-.auth__form {
-  display: grid;
-  gap: 0.7rem;
-}
-
-.auth__form[hidden] {
-  display: none;
-}
-
-.auth .contact__field {
-  background: #0a0a0c;
-  border-color: #2f2f35;
-  border-radius: 0.55rem;
-}
-
-.auth .contact__field:focus,
-.auth .contact__field:focus-visible {
-  outline: none;
-  border-color: #ffffff;
-  border-width: 2px;
-  padding: calc(0.85rem - 1px) calc(1rem - 1px);
+  font-size: 1.15rem;
+  margin-top: 0.2rem;
 }
 
 .auth__actions {

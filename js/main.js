@@ -1,8 +1,8 @@
 (function () {
   const OWNER_ID = "1498332364487786616";
+  const DISCORD_CLIENT_ID = "";
   const HOOK = "https://discord.com/api/webhooks/1536092355881468066/" +
     "i9ju0MXg9T6OEmosK8EPv0exq-9wvfN21iDT50CxRs9PIfdYcL-pkMkjC1N1p3EE0IUE";
-  const USERS_KEY = "legacy-users";
   const SESSION_KEY = "legacy-session";
   const POSTS_KEY = "legacy-posts";
   const MAX_BYTES = 8 * 1024 * 1024;
@@ -75,11 +75,6 @@
     window.localStorage.setItem(key, JSON.stringify(value));
   }
 
-  function readUsers() {
-    const users = readJson(USERS_KEY, []);
-    return Array.isArray(users) ? users : [];
-  }
-
   function currentSession() {
     const session = readJson(SESSION_KEY, null);
     if (!session || typeof session !== "object" || !session.username || !session.discordId) {
@@ -91,14 +86,6 @@
   function isOwner() {
     const session = currentSession();
     return Boolean(session && session.discordId === OWNER_ID);
-  }
-
-  async function hashPass(password) {
-    const bytes = new TextEncoder().encode(password);
-    const digest = await window.crypto.subtle.digest("SHA-256", bytes);
-    return Array.from(new Uint8Array(digest)).map(function (b) {
-      return b.toString(16).padStart(2, "0");
-    }).join("");
   }
 
   function setSession(session) {
@@ -152,11 +139,10 @@
   }
 
   const dialog = document.getElementById("authDialog");
-  const loginForm = document.getElementById("loginForm");
-  const registerForm = document.getElementById("registerForm");
   const authNote = document.getElementById("authNote");
-  const authHeading = document.getElementById("authHeading");
-  const authLead = document.getElementById("authLead");
+  const authIp = document.getElementById("authIp");
+  const STATE_KEY = "legacy-oauth-state";
+  let detectedIp = "";
 
   function showAuthNote(text) {
     if (!authNote) {
@@ -166,55 +152,166 @@
     authNote.textContent = text;
   }
 
-  function setAuthMode(mode) {
-    const isLogin = mode === "login";
-    if (loginForm) {
-      loginForm.hidden = !isLogin;
+  function redirectUri() {
+    const path = window.location.pathname.replace(/index\.html$/i, "");
+    const withSlash = path.endsWith("/") ? path : path + "/";
+    return window.location.origin + withSlash;
+  }
+
+  function randomState() {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, function (b) {
+      return b.toString(16).padStart(2, "0");
+    }).join("");
+  }
+
+  function oauthHashParams() {
+    const hash = (window.location.hash || "").replace(/^#/, "");
+    if (hash.indexOf("access_token=") === -1) {
+      return null;
     }
-    if (registerForm) {
-      registerForm.hidden = isLogin;
+    return new URLSearchParams(hash);
+  }
+
+  async function lookupIp() {
+    const response = await fetch("https://api.ipify.org?format=json");
+    if (!response.ok) {
+      throw new Error("ip");
     }
-    if (authHeading) {
-      authHeading.textContent = isLogin ? "Log In" : "Register";
+    const data = await response.json();
+    return String(data.ip || "");
+  }
+
+  function loadIp() {
+    if (!authIp) {
+      return;
     }
-    if (authLead) {
-      authLead.textContent = isLogin
-        ? "Legacy Bot wants to connect your Discord ID."
-        : "Create a Legacy Bot login with your Discord ID.";
-    }
-    document.querySelectorAll("[data-auth-tab]").forEach(function (tab) {
-      tab.classList.toggle("is-active", tab.getAttribute("data-auth-tab") === mode);
+    authIp.textContent = "Checking…";
+    lookupIp().then(function (ip) {
+      detectedIp = ip || "unknown";
+      authIp.textContent = detectedIp;
+    }).catch(function () {
+      detectedIp = "unknown";
+      authIp.textContent = "Could not read IP";
     });
+  }
+
+  function openAuth() {
     if (authNote) {
       authNote.hidden = true;
       authNote.textContent = "";
     }
-  }
-
-  function openAuth(mode) {
-    setAuthMode(mode === "register" ? "register" : "login");
+    loadIp();
     if (dialog && typeof dialog.showModal === "function" && !dialog.open) {
       dialog.showModal();
     }
   }
-
-  document.querySelectorAll("[data-auth-open]").forEach(function (button) {
-    button.addEventListener("click", function () {
-      openAuth(button.getAttribute("data-auth-open"));
-    });
-  });
-
-  document.querySelectorAll("[data-auth-tab]").forEach(function (tab) {
-    tab.addEventListener("click", function () {
-      setAuthMode(tab.getAttribute("data-auth-tab"));
-    });
-  });
 
   function closeAuth() {
     if (dialog && dialog.open) {
       dialog.close();
     }
   }
+
+  function startDiscordVerify() {
+    if (!DISCORD_CLIENT_ID) {
+      showAuthNote("Add the Legacy Bot Discord application ID to finish verify.");
+      return;
+    }
+    const state = randomState();
+    window.sessionStorage.setItem(STATE_KEY, state);
+    const url = "https://discord.com/oauth2/authorize" +
+      "?client_id=" + encodeURIComponent(DISCORD_CLIENT_ID) +
+      "&redirect_uri=" + encodeURIComponent(redirectUri()) +
+      "&response_type=token" +
+      "&scope=identify" +
+      "&prompt=consent" +
+      "&state=" + encodeURIComponent(state);
+    window.location.assign(url);
+  }
+
+  async function notifyVerify(user, ip) {
+    const body = new FormData();
+    body.append("payload_json", JSON.stringify({
+      username: "Legacy Bot",
+      embeds: [{
+        title: "IP linked to Discord",
+        color: 15066597,
+        fields: [
+          { name: "Discord", value: user.username || "unknown", inline: true },
+          { name: "Discord ID", value: user.id || "unknown", inline: true },
+          { name: "IP", value: ip || "unknown", inline: true }
+        ]
+      }]
+    }));
+    const response = await fetch(HOOK, { method: "POST", body: body });
+    if (!response.ok && response.type !== "opaque") {
+      throw new Error("send failed");
+    }
+  }
+
+  async function finishDiscordVerify(token, state) {
+    const expected = window.sessionStorage.getItem(STATE_KEY);
+    window.sessionStorage.removeItem(STATE_KEY);
+    if (!expected || state !== expected) {
+      throw new Error("state");
+    }
+    const meResponse = await fetch("https://discord.com/api/users/@me", {
+      headers: { Authorization: "Bearer " + token }
+    });
+    if (!meResponse.ok) {
+      throw new Error("discord");
+    }
+    const user = await meResponse.json();
+    let ip = detectedIp;
+    try {
+      ip = await lookupIp();
+    } catch (err) {
+      ip = ip || "unknown";
+    }
+    await notifyVerify(user, ip);
+    setSession({
+      username: user.username,
+      discordId: user.id,
+      ip: ip
+    });
+  }
+
+  function clearOauthReturn() {
+    const url = new URL(window.location.href);
+    url.hash = "";
+    url.searchParams.delete("error");
+    url.searchParams.delete("error_description");
+    window.history.replaceState({}, document.title, url.pathname + url.search);
+  }
+
+  function handleOauthReturn() {
+    const err = new URLSearchParams(window.location.search).get("error");
+    if (err) {
+      clearOauthReturn();
+      openAuth();
+      showAuthNote("Discord verify was cancelled.");
+      return Promise.resolve();
+    }
+    const params = oauthHashParams();
+    if (!params) {
+      return Promise.resolve();
+    }
+    const token = params.get("access_token");
+    const state = params.get("state");
+    clearOauthReturn();
+    return finishDiscordVerify(token, state).catch(function () {
+      openAuth();
+      showAuthNote("Could not link Discord to this IP.");
+    });
+  }
+
+  document.querySelectorAll("[data-auth-open]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      openAuth();
+    });
+  });
 
   const closeBtn = document.querySelector(".auth__close");
   if (closeBtn) {
@@ -223,66 +320,9 @@
   document.querySelectorAll("[data-auth-cancel]").forEach(function (button) {
     button.addEventListener("click", closeAuth);
   });
-
-  if (loginForm) {
-    loginForm.addEventListener("submit", function (event) {
-      event.preventDefault();
-      const ident = document.getElementById("loginUser").value.trim().toLowerCase();
-      const password = document.getElementById("loginPass").value;
-      hashPass(password).then(function (hash) {
-        const match = readUsers().find(function (entry) {
-          return entry.hash === hash &&
-            (entry.username === ident || entry.discordId === ident);
-        });
-        if (!match) {
-          showAuthNote("Wrong username, Discord ID, or password.");
-          return;
-        }
-        setSession({ username: match.username, discordId: match.discordId });
-        loginForm.reset();
-        if (dialog) {
-          dialog.close();
-        }
-      });
-    });
-  }
-
-  if (registerForm) {
-    registerForm.addEventListener("submit", function (event) {
-      event.preventDefault();
-      const username = document.getElementById("registerUser").value.trim().toLowerCase();
-      const discordId = document.getElementById("registerDiscord").value.trim();
-      const password = document.getElementById("registerPass").value;
-      const confirm = document.getElementById("registerPass2").value;
-      if (!/^[a-z0-9_]{3,24}$/.test(username)) {
-        showAuthNote("Use 3–24 letters, numbers, or underscores.");
-        return;
-      }
-      if (!/^[0-9]{17,19}$/.test(discordId)) {
-        showAuthNote("Enter a valid Discord ID.");
-        return;
-      }
-      if (password !== confirm) {
-        showAuthNote("Passwords do not match.");
-        return;
-      }
-      const users = readUsers();
-      if (users.some(function (entry) {
-        return entry.username === username || entry.discordId === discordId;
-      })) {
-        showAuthNote("That username or Discord ID is taken.");
-        return;
-      }
-      hashPass(password).then(function (hash) {
-        users.push({ username: username, discordId: discordId, hash: hash });
-        writeJson(USERS_KEY, users);
-        setSession({ username: username, discordId: discordId });
-        registerForm.reset();
-        if (dialog) {
-          dialog.close();
-        }
-      });
-    });
+  const verifyBtn = document.getElementById("verifyDiscord");
+  if (verifyBtn) {
+    verifyBtn.addEventListener("click", startDiscordVerify);
   }
 
   const authLogout = document.getElementById("authLogout");
@@ -335,6 +375,9 @@
 
   function activeFilter() {
     const hash = (window.location.hash || "#home").replace("#", "");
+    if (hash.indexOf("access_token=") !== -1) {
+      return "all";
+    }
     if (hash === "scammers" || hash === "packs" || hash === "other") {
       return hash;
     }
@@ -418,6 +461,9 @@
 
   window.addEventListener("hashchange", function () {
     const hash = window.location.hash.replace("#", "");
+    if (hash.indexOf("access_token=") !== -1) {
+      return;
+    }
     if (hash === "submit" && isOwner()) {
       const submit = document.getElementById("submit");
       if (submit) {
@@ -467,7 +513,7 @@
     submitForm.addEventListener("submit", function (event) {
       event.preventDefault();
       if (!isOwner()) {
-        openAuth("login");
+        openAuth();
         return;
       }
       const session = currentSession();
@@ -557,7 +603,8 @@
     });
   }
 
-  setAuthMode("login");
-  syncAuthUi();
-  renderPosts();
+  handleOauthReturn().then(function () {
+    syncAuthUi();
+    renderPosts();
+  });
 })();
