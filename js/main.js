@@ -139,11 +139,14 @@
     if (ownerBadge) {
       ownerBadge.hidden = !owner;
     }
+    document.querySelectorAll("[data-owner-only]").forEach(function (el) {
+      el.hidden = !owner;
+    });
     if (publicView) {
-      publicView.hidden = owner;
+      publicView.hidden = false;
     }
     if (ownerView) {
-      ownerView.hidden = !owner;
+      ownerView.hidden = true;
     }
     document.body.classList.toggle("is-owner", owner);
   }
@@ -415,7 +418,7 @@
 
   window.addEventListener("hashchange", function () {
     const hash = window.location.hash.replace("#", "");
-    if (hash === "submit") {
+    if (hash === "submit" && isOwner()) {
       const submit = document.getElementById("submit");
       if (submit) {
         submit.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
@@ -458,24 +461,16 @@
     }
   }
 
-  function requireLogin() {
-    const session = currentSession();
-    if (!session) {
-      openAuth("login");
-      return null;
-    }
-    return session;
-  }
-
   const submitForm = document.getElementById("submitForm");
   const submitNote = document.getElementById("submitNote");
   if (submitForm) {
     submitForm.addEventListener("submit", function (event) {
       event.preventDefault();
-      const session = requireLogin();
-      if (!session) {
+      if (!isOwner()) {
+        openAuth("login");
         return;
       }
+      const session = currentSession();
       const title = document.getElementById("submitTitle").value.trim();
       const category = document.getElementById("submitCategory").value;
       const description = document.getElementById("submitDesc").value.trim();
@@ -487,16 +482,28 @@
         return;
       }
       submitNote.hidden = false;
-      submitNote.textContent = "Sending…";
+      submitNote.textContent = "Publishing…";
+      const post = {
+        id: String(Date.now()),
+        title: title,
+        description: description,
+        category: category,
+        fileName: file.name,
+        createdAt: Date.now()
+      };
       sendWebhook({
         title: title,
         description: description,
         category: category,
         from: session.username + " (" + session.discordId + ")",
-        kind: "user-submit"
+        kind: "owner-import"
       }, file).then(function () {
+        const posts = readPosts();
+        posts.push(post);
+        writeJson(POSTS_KEY, posts);
         submitForm.reset();
-        submitNote.textContent = "Sent. Staff will review it.";
+        submitNote.textContent = "Published to " + categoryLabel(category) + ".";
+        renderPosts();
       }).catch(function () {
         submitNote.textContent = "Could not send. Try again.";
       });

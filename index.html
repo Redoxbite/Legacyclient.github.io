@@ -39,7 +39,7 @@
         <a class="site-nav__link" href="#home">Home</a>
         <a class="site-nav__link" href="#scammers">Scammers</a>
         <a class="site-nav__link" href="#packs">Texture packs</a>
-        <a class="site-nav__link" href="#submit">Submit</a>
+        <a class="site-nav__link" href="#submit" data-owner-only hidden>Submit</a>
         <button class="site-nav__link" type="button" data-auth-open="register" data-auth-guest>Register</button>
         <button class="site-nav__link" type="button" data-auth-open="login" data-auth-guest>Log In</button>
       </nav>
@@ -80,9 +80,9 @@
           <p class="section__label">Categories</p>
           <h2 class="section__title">Open a board</h2>
           <div class="cat-grid">
-            <a class="cat-card glass" href="#submit">
+            <a class="cat-card glass" href="#submit" data-owner-only hidden>
               <h3>Submit a file</h3>
-              <p>Send a pack, proof, or report. It goes to staff.</p>
+              <p>Pick a board and publish a file. Only you see this.</p>
               <span class="cat-card__meta">Open form</span>
             </a>
             <a class="cat-card glass" href="#scammers">
@@ -107,11 +107,11 @@
         </div>
       </section>
 
-      <section class="section" id="submit">
+      <section class="section" id="submit" data-owner-only hidden>
         <div class="container">
           <p class="section__label">Submit</p>
           <h2 class="section__title">Send a file</h2>
-          <p class="section__intro">Logged-in users can drop a file for scammers, texture packs, or other. Staff get it on Discord.</p>
+          <p class="section__intro">Owner only. Pick scammers, texture packs, or other, then publish the file.</p>
           <form class="submit-form glass" id="submitForm">
             <label class="visually-hidden" for="submitTitle">Title</label>
             <input class="contact__field" id="submitTitle" name="title" type="text" placeholder="Title" required maxlength="80">
@@ -181,7 +181,7 @@
           <img class="site-header__logo" src="assets/logo.png" alt="" width="40" height="28">
           <span class="site-header__name">Legacy Client</span>
         </a>
-        <p class="site-footer__copy">Scammers · Texture packs · Submit</p>
+        <p class="site-footer__copy">Scammers · Texture packs</p>
       </div>
     </div>
   </footer>
