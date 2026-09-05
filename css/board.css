@@ -927,6 +927,15 @@ main {
   font-size: var(--text-sm);
 }
 
+.site-footer__copy:hover,
+.site-footer__copy:focus-visible {
+  color: var(--text);
+}
+
+.site-footer__copy:active {
+  transform: scale(0.98);
+}
+
 .page-404 {
   position: relative;
   z-index: 1;
