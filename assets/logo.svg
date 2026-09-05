@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Legacy Client">
+  <defs>
+    <radialGradient id="moon" cx="38%" cy="32%" r="70%">
+      <stop offset="0%" stop-color="#f4ead2"/>
+      <stop offset="55%" stop-color="#c9d4b4"/>
+      <stop offset="100%" stop-color="#6f8a62"/>
+    </radialGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1a1d18" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#050605"/>
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="32" r="30" fill="url(#glass)" stroke="rgba(232,223,200,0.28)" stroke-width="1.4"/>
+  <circle cx="38" cy="22" r="8.5" fill="url(#moon)"/>
+  <path fill="#1a2218" d="M8 52 L18 28 L22 36 L32 14 L42 36 L46 28 L56 52 Z"/>
+  <path fill="#0c120c" d="M12 52 L20 34 L26 44 L32 22 L38 44 L44 34 L52 52 Z"/>
+  <rect x="30" y="46" width="4" height="8" fill="#0c120c"/>
+</svg>

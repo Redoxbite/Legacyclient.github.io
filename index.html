@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Legacy Client — a smoked-glass Fabric utility client for Minecraft 1.21.11. Dark forest atmosphere, glassy GUI, and GitHub Pages edge protection.">
+  <meta name="theme-color" content="#050705">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
+  <meta property="og:title" content="Legacy Client">
+  <meta property="og:description" content="Smoked-glass Fabric client. Dark forest. Built for GitHub Pages.">
+  <meta property="og:type" content="website">
+  <title>Legacy Client</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="canonical" href="https://redoxbite.github.io/Legacyclient.github.io/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#home">Skip to content</a>
+
+  <div class="scene" aria-hidden="true">
+    <div class="scene__moon"></div>
+    <div class="scene__fog scene__fog--back"></div>
+    <div class="scene__forest"></div>
+    <div class="scene__forest scene__forest--lit"></div>
+    <div class="scene__light"></div>
+    <canvas class="scene__fireflies" id="fireflies"></canvas>
+    <div class="scene__fog scene__fog--front"></div>
+    <div class="scene__vignette"></div>
+  </div>
+
+  <header class="site-header glass" id="top">
+    <a class="site-header__brand" href="#home">
+      <img class="site-header__logo" src="assets/logo.svg" alt="" width="38" height="38">
+      <span class="site-header__name">Legacy</span>
+    </a>
+    <div class="site-header__right">
+      <span class="shield" title="Served from GitHub's global CDN">
+        <span class="shield__dot"></span>
+        Protected
+      </span>
+      <nav class="site-nav" id="siteNav" aria-label="Primary">
+        <a class="site-nav__link" href="#features">Features</a>
+        <a class="site-nav__link" href="#gui">GUI</a>
+        <a class="site-nav__link" href="#protection">Protection</a>
+        <a class="site-nav__link" href="#download">Download</a>
+        <a class="site-nav__link" href="#contact">Contact</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="siteNav">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" id="home">
+      <div class="container hero__grid">
+        <div>
+          <p class="hero__eyebrow">Fabric · Minecraft 1.21.11 · V1</p>
+          <h1 class="hero__title">Legacy<span>Client</span></h1>
+          <p class="hero__copy">
+            A smoked-glass utility client with a dark-forest atmosphere. Move the cursor
+            and the trees wake up. The GUI stays quiet, frosted, and close to the in-game menu.
+          </p>
+          <div class="hero__actions">
+            <a class="btn btn--primary" href="#download">Get Legacy</a>
+            <a class="btn btn--ghost" href="#gui">Open the glass GUI</a>
+          </div>
+          <div class="hero__stats">
+            <div class="stat glass">
+              <span class="stat__value">50+</span>
+              <span class="stat__label">Modules</span>
+            </div>
+            <div class="stat glass">
+              <span class="stat__value">1.21.11</span>
+              <span class="stat__label">Minecraft</span>
+            </div>
+            <div class="stat glass">
+              <span class="stat__value">CDN</span>
+              <span class="stat__label">Edge shield</span>
+            </div>
+          </div>
+        </div>
+
+        <aside class="gui glass" id="gui" aria-label="Legacy glass GUI preview">
+          <div class="gui__top">
+            <div class="gui__brand">
+              <img src="assets/logo.svg" alt="" width="26" height="26">
+              Legacy
+            </div>
+            <p class="gui__hint">Click modules to toggle</p>
+          </div>
+          <div class="gui__body">
+            <div class="gui__cats" role="tablist" aria-label="Module categories">
+              <button class="gui__cat is-active" type="button" data-cat="combat">Combat</button>
+              <button class="gui__cat" type="button" data-cat="render">Render</button>
+              <button class="gui__cat" type="button" data-cat="esp">ESP</button>
+              <button class="gui__cat" type="button" data-cat="movement">Move</button>
+              <button class="gui__cat" type="button" data-cat="donut">Donut</button>
+            </div>
+            <div class="gui__list" id="guiList" role="tabpanel"></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section" id="features">
+      <div class="container">
+        <p class="section__label">Features</p>
+        <h2 class="section__title">Built like the in-game glass</h2>
+        <p class="section__intro">
+          The same smoked panels, chrome edges, and quiet typography as the client.
+          Utility-first modules for combat, visuals, HUD, and Donut SMP.
+        </p>
+        <div class="feature-grid">
+          <article class="feature-card glass">
+            <div class="feature-card__icon">C</div>
+            <h3>Combat</h3>
+            <p>Auto Crystal, Fast XP, totem handling, and placement tools kept in one glass column.</p>
+          </article>
+          <article class="feature-card glass">
+            <div class="feature-card__icon">R</div>
+            <h3>Render &amp; HUD</h3>
+            <p>Nametags, radar, motion blur, keystrokes, and a custom hotbar that stays readable at night.</p>
+          </article>
+          <article class="feature-card glass">
+            <div class="feature-card__icon">E</div>
+            <h3>ESP</h3>
+            <p>Players, storage, holes, bases, and block outlines with the same frosted overlay language.</p>
+          </article>
+          <article class="feature-card glass">
+            <div class="feature-card__icon">M</div>
+            <h3>Movement</h3>
+            <p>Sprint, NoSlow, phase, boat fly, and jump reset without a noisy settings dump.</p>
+          </article>
+          <article class="feature-card glass">
+            <div class="feature-card__icon">D</div>
+            <h3>Donut tools</h3>
+            <p>Base locate, chunk finders, player debug, home reset, and session guards for Donut SMP.</p>
+          </article>
+          <article class="feature-card glass">
+            <div class="feature-card__icon">G</div>
+            <h3>Glass GUI</h3>
+            <p>Classic smoked glass, chrome, or black. Blur, tint, and hard outlines match the client theme.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="modules">
+      <div class="container">
+        <p class="section__label">Module cloud</p>
+        <h2 class="section__title">A quiet full kit</h2>
+        <div class="module-cloud" id="moduleCloud"></div>
+      </div>
+    </section>
+
+    <section class="section" id="protection">
+      <div class="container">
+        <p class="section__label">Protection</p>
+        <h2 class="section__title">GitHub edge, static origin</h2>
+        <p class="section__intro">
+          This site is a static GitHub Pages build. There is no app server to flood.
+          Traffic is absorbed by GitHub’s global CDN, TLS, and DDoS mitigation.
+        </p>
+        <div class="protect-grid">
+          <article class="protect-card glass">
+            <p class="protect-card__status"><span class="shield__dot"></span> Active</p>
+            <h3>GitHub Pages CDN</h3>
+            <p>Pages are served from GitHub’s edge network. Large floods hit the CDN, not a home origin.</p>
+          </article>
+          <article class="protect-card glass">
+            <p class="protect-card__status"><span class="shield__dot"></span> Active</p>
+            <h3>HTTPS only</h3>
+            <p>Forced TLS, strict referrer policy, and a locked-down Content Security Policy on every page.</p>
+          </article>
+          <article class="protect-card glass">
+            <p class="protect-card__status"><span class="shield__dot"></span> Active</p>
+            <h3>Static attack surface</h3>
+            <p>No database, no login, no API. Contact is rate-limited in the browser before a mail client opens.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="download">
+      <div class="container">
+        <div class="download-panel glass">
+          <div>
+            <p class="section__label">Download</p>
+            <h2 class="section__title">Legacy for Fabric 1.21.11</h2>
+            <p class="section__intro">Drop the jar into your mods folder with Fabric Loader 0.19+ and Fabric API.</p>
+            <div class="download-panel__meta">
+              <p class="download-panel__row"><span>Build</span><span>1.0.1</span></p>
+              <p class="download-panel__row"><span>Loader</span><span>Fabric</span></p>
+              <p class="download-panel__row"><span>Game</span><span>Minecraft 1.21.11</span></p>
+              <p class="download-panel__row"><span>Host</span><span>GitHub Pages</span></p>
+            </div>
+            <a class="btn btn--primary" href="https://github.com/harveystent2-cmd/LegacyClient" rel="noopener noreferrer">Open the GitHub repo</a>
+          </div>
+          <div>
+            <p class="section__label">Install</p>
+            <h3 class="section__title">Three steps</h3>
+            <p class="section__intro">Install Fabric for 1.21.11, add Fabric API, then place Legacy in mods. Launch and open the glass GUI in-game.</p>
+            <a class="btn btn--ghost" href="#contact">Need a build?</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="contact">
+      <div class="container contact-grid">
+        <div>
+          <p class="section__label">Contact</p>
+          <h2 class="section__title">Stay in the forest</h2>
+          <p class="section__intro">
+            Questions about builds, hosting, or the glass theme. Messages open your mail client
+            after a short local rate limit.
+          </p>
+        </div>
+        <form class="contact__form glass" id="contactForm" novalidate>
+          <label class="visually-hidden" for="name">Name</label>
+          <input class="contact__field" id="name" name="name" type="text" placeholder="Name" required maxlength="80" autocomplete="name">
+          <label class="visually-hidden" for="email">Email</label>
+          <input class="contact__field" id="email" name="email" type="email" placeholder="Email" required maxlength="120" autocomplete="email">
+          <label class="visually-hidden" for="message">Message</label>
+          <textarea class="contact__field" id="message" name="message" rows="4" placeholder="Message" required maxlength="1200"></textarea>
+          <button class="btn btn--primary btn--full" type="submit">Send</button>
+          <p class="contact__note" id="formNote" hidden></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="site-footer__inner glass">
+        <a class="site-header__brand" href="#home">
+          <img class="site-header__logo" src="assets/logo.svg" alt="" width="32" height="32">
+          <span class="site-header__name">Legacy Client</span>
+        </a>
+        <p class="site-footer__copy">legacyclient.github.io · GitHub Pages · © 2026</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

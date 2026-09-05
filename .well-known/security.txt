@@ -1,0 +1,3 @@
+Contact: mailto:hello@legacyclient.dev
+Preferred-Languages: en
+Canonical: https://redoxbite.github.io/Legacyclient.github.io/.well-known/security.txt
