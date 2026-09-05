@@ -16,9 +16,13 @@
   <link rel="canonical" href="https://legacy-client.github.io/">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://telegra.ph">
+  <link rel="preconnect" href="https://mantledb.sh">
+  <link rel="preload" as="image" type="image/webp" href="assets/scene-mountains-1280.webp" media="(max-width: 767px)">
+  <link rel="preload" as="image" type="image/webp" href="assets/scene-mountains-1920.webp" media="(min-width: 768px)">
   <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,600;1,700;1,800;1,900&family=Inter:ital,wght@0,400;0,500;0,600;1,700&display=swap" rel="stylesheet">
   <meta http-equiv="Cache-Control" content="no-store">
-  <link rel="stylesheet" href="css/board.css?v=desk25">
+  <link rel="stylesheet" href="css/board.css?v=desk26">
 </head>
 <body class="is-shielded">
   <a class="skip-link" href="#home">Skip to content</a>
@@ -40,7 +44,13 @@
   </div>
 
   <div class="scene" aria-hidden="true">
-    <img class="scene__mountains" src="assets/scene-mountains.jpg" alt="" width="3840" height="2543">
+    <picture>
+      <source type="image/webp"
+        srcset="assets/scene-mountains-1280.webp 1280w, assets/scene-mountains-1920.webp 1920w"
+        sizes="100vw">
+      <img class="scene__mountains" src="assets/scene-mountains-1920.jpg" alt="" width="1920" height="1272"
+        decoding="async" fetchpriority="high">
+    </picture>
     <div class="scene__fog scene__fog--a"></div>
     <div class="scene__fog scene__fog--b"></div>
     <div class="scene__snow scene__snow--far"></div>
@@ -342,9 +352,9 @@
     </form>
   </dialog>
 
-  <script src="js/config.js?v=desk25"></script>
-  <script src="js/shield.js?v=desk25"></script>
-  <script src="js/cloud.js?v=desk25"></script>
-  <script src="js/board.js?v=desk25"></script>
+  <script src="js/config.js?v=desk26"></script>
+  <script src="js/shield.js?v=desk26"></script>
+  <script src="js/cloud.js?v=desk26"></script>
+  <script src="js/board.js?v=desk26"></script>
 </body>
 </html>

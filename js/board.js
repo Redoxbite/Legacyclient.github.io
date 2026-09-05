@@ -198,9 +198,14 @@
     return api ? api.publicUrl(preview) : preview;
   }
 
-  function fillPreview(img, post) {
+  function fillPreview(img, post, eager) {
     if (!img) {
       return;
+    }
+    img.decoding = "async";
+    img.loading = eager ? "eager" : "lazy";
+    if (eager) {
+      img.setAttribute("fetchpriority", "high");
     }
     const preview = post && post.preview;
     const api = cloud();
@@ -903,7 +908,7 @@
     return days + " days ago";
   }
 
-  function postCard(post) {
+  function postCard(post, index) {
     const article = document.createElement("article");
     article.className = post.category === "packs" ? "post-card" : "post-card post-card--shot";
     article.tabIndex = 0;
@@ -912,7 +917,7 @@
     media.className = "post-card__media";
     const picture = document.createElement("img");
     picture.className = "post-card__picture";
-    fillPreview(picture, post);
+    fillPreview(picture, post, index < 6);
     picture.alt = "";
     picture.addEventListener("error", function () {
       if (picture.getAttribute("src") !== DEFAULT_COVER) {
@@ -1213,7 +1218,7 @@
     activePost = post;
     const hasPreview = Boolean(post.preview);
     if (postViewPicture) {
-      fillPreview(postViewPicture, post);
+      fillPreview(postViewPicture, post, true);
       postViewPicture.hidden = false;
     }
     if (postViewHint) {
@@ -1253,7 +1258,7 @@
     if (!target || !target.preview || !zoomPicture) {
       return;
     }
-    fillPreview(zoomPicture, target);
+    fillPreview(zoomPicture, target, true);
     if (zoomDialog && typeof zoomDialog.showModal === "function") {
       if (!zoomDialog.open) {
         zoomDialog.showModal();
@@ -1717,8 +1722,8 @@
         target.append(empty);
         return;
       }
-      posts.forEach(function (post) {
-        target.append(postCard(post));
+      posts.forEach(function (post, index) {
+        target.append(postCard(post, index));
       });
     }
 

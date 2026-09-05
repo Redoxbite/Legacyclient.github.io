@@ -123,6 +123,12 @@
     if (href.indexOf("upload.gofile.io") !== -1 || href.indexOf("telegra.ph/upload") !== -1) {
       return "upload";
     }
+    if (verb === "GET" || verb === "HEAD") {
+      if (href.indexOf("/img/") !== -1 || href.indexOf("telegra.ph") !== -1 ||
+          href.indexOf("te.legra.ph") !== -1) {
+        return "media";
+      }
+    }
     if (verb !== "GET" && verb !== "HEAD") {
       return "write";
     }
@@ -151,8 +157,10 @@
 
   function guardedFetch(url, opts) {
     const options = opts || {};
+    const kind = classify(url, options.method);
     return ready.then(function () {
-      return take(classify(url, options.method)).then(function () {
+      const gate = kind === "media" ? Promise.resolve() : take(kind);
+      return gate.then(function () {
         return window.fetch(url, options).then(function (res) {
           if (res.status !== 429) {
             return res;
@@ -160,7 +168,7 @@
           const retry = Number(res.headers.get("Retry-After"));
           const wait = Math.min(8000, (retry > 0 ? retry : 2) * 1000);
           return sleep(wait).then(function () {
-            return take(classify(url, options.method)).then(function () {
+            return take(kind === "media" ? "read" : kind).then(function () {
               return window.fetch(url, options);
             });
           });

@@ -10,6 +10,8 @@
   const BOARD_URL = cfg.boardStore || "https://mantledb.sh/v2/legacyclientboard/posts";
   const BOARD_KEY = cfg.boardKey || "454742b233283cfb642bcac227f83a8a2b75fd6b3d7c823d44b78ee4dc4b48e3";
   let loadPostsJob = null;
+  const previewCache = {};
+  const previewJobs = {};
 
   function net(url, opts) {
     const shield = global.LEGACY_SHIELD;
@@ -343,16 +345,29 @@
     if (!url) {
       return Promise.resolve("");
     }
-    return net(url, { cache: "no-store" }).then(function (res) {
+    if (Object.prototype.hasOwnProperty.call(previewCache, url)) {
+      return Promise.resolve(previewCache[url]);
+    }
+    if (previewJobs[url]) {
+      return previewJobs[url];
+    }
+    previewJobs[url] = net(url).then(function (res) {
       if (!res.ok) {
         throw new Error("preview");
       }
       return res.json();
     }).then(function (data) {
-      return data && data.src ? data.src : "";
+      const src = data && data.src ? data.src : "";
+      previewCache[url] = src;
+      return src;
     }).catch(function () {
+      previewCache[url] = "";
       return "";
+    }).then(function (src) {
+      delete previewJobs[url];
+      return src;
     });
+    return previewJobs[url];
   }
 
   function isBoardPreview(value) {
