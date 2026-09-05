@@ -1138,8 +1138,14 @@ main {
   color: var(--bg);
 }
 
-.dl__btn:active {
-  transform: scale(0.96);
+.dl__btn--lock {
+  color: var(--muted);
+}
+
+.dl__btn--lock:hover,
+.dl__btn--lock:focus-visible {
+  background: var(--text);
+  color: var(--bg);
 }
 
 .zoom {

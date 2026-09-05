@@ -12,6 +12,7 @@
   };
   let activePost = null;
   let openingPost = false;
+  let pendingDownload = null;
 
   const root = document.documentElement;
   const header = document.querySelector(".site-header");
@@ -516,6 +517,14 @@
     return session;
   }
 
+  function isSignedIn() {
+    return Boolean(currentSession());
+  }
+
+  function packNeedsLogin(post) {
+    return Boolean(post && post.category === "packs" && !isSignedIn());
+  }
+
   function isOwner() {
     const session = currentSession();
     return Boolean(session && session.discordId === OWNER_ID);
@@ -529,6 +538,9 @@
     }
     syncAuthUi();
     renderPosts();
+    if (activePost && postPage && !postPage.hidden) {
+      fillDownloadRows(activePost);
+    }
   }
 
   function syncAuthUi() {
@@ -582,6 +594,8 @@
 
   const dialog = document.getElementById("authDialog");
   const authNote = document.getElementById("authNote");
+  const authLead = document.querySelector(".auth__lead");
+  const AUTH_LEAD_DEFAULT = authLead ? authLead.textContent : "";
   const STATE_KEY = cfg.stateKey || "legacy-oauth-state";
   let verifyPopup = null;
   let verifyTimer = 0;
@@ -594,10 +608,15 @@
     authNote.textContent = text;
   }
 
-  function openAuth() {
+  function openAuth(reason) {
     if (authNote) {
       authNote.hidden = true;
       authNote.textContent = "";
+    }
+    if (authLead) {
+      authLead.textContent = reason === "download"
+        ? "Log in with Discord to download this texture pack."
+        : AUTH_LEAD_DEFAULT;
     }
     if (dialog && typeof dialog.showModal === "function" && !dialog.open) {
       dialog.showModal();
@@ -654,6 +673,10 @@
     closeAuth();
     syncAuthUi();
     renderPosts();
+    if (activePost && postPage && !postPage.hidden) {
+      fillDownloadRows(activePost);
+    }
+    finishPendingDownload();
   }
 
   function discordAuthUrl() {
@@ -960,11 +983,19 @@
       meta.className = "dl__meta";
       meta.textContent = fileMetaLine(entry);
       body.append(name, meta);
+      const locked = packNeedsLogin(post);
       const button = document.createElement("button");
-      button.className = "dl__btn";
+      button.className = locked ? "dl__btn dl__btn--lock" : "dl__btn";
       button.type = "button";
-      button.setAttribute("aria-label", "Download " + (entry.name || "file"));
-      button.append(svgNode("M12 4v12m0 0l-4-4m4 4l4-4M5 19h14"));
+      button.setAttribute("aria-label", locked
+        ? "Log in to download " + (entry.name || "file")
+        : "Download " + (entry.name || "file"));
+      button.append(svgNode(locked
+        ? "M8 10V7a4 4 0 118 0v3M6 10h12v11H6z"
+        : "M12 4v12m0 0l-4-4m4 4l4-4M5 19h14"));
+      if (locked) {
+        meta.textContent = "Log in to download";
+      }
       button.addEventListener("click", function () {
         downloadPostFile(post, entry, meta);
       });
@@ -979,6 +1010,18 @@
   }
 
   function downloadPostFile(post, entry, meta) {
+    if (packNeedsLogin(post)) {
+      pendingDownload = {
+        postId: post.id,
+        fileId: entry.id
+      };
+      if (meta) {
+        meta.textContent = "Log in to download";
+      }
+      openAuth("download");
+      return;
+    }
+
     function saveBlob(blob, name) {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -1036,6 +1079,27 @@
         }
       });
     });
+  }
+
+  function finishPendingDownload() {
+    const pending = pendingDownload;
+    pendingDownload = null;
+    if (!pending || !isSignedIn()) {
+      return;
+    }
+    const post = readPosts().filter(function (entry) {
+      return entry.id === pending.postId;
+    })[0] || (activePost && activePost.id === pending.postId ? activePost : null);
+    if (!post) {
+      return;
+    }
+    const entry = postFiles(post).filter(function (item) {
+      return item.id === pending.fileId;
+    })[0];
+    if (!entry) {
+      return;
+    }
+    downloadPostFile(post, entry, null);
   }
 
   function openPost(post, fromHash) {
