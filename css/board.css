@@ -930,13 +930,6 @@ main {
   border-radius: 1.3rem;
 }
 
-.site-footer__meta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.2rem;
-}
-
 .site-footer__copy {
   color: var(--muted);
   font-size: var(--text-sm);
@@ -949,13 +942,6 @@ main {
 
 .site-footer__copy:active {
   transform: scale(0.98);
-}
-
-.site-footer__shield {
-  color: var(--muted);
-  font-size: var(--text-xs);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 .shield {
@@ -1529,10 +1515,6 @@ body.is-shielded {
 
   .desk__title {
     font-size: 2.4rem;
-  }
-
-  .site-footer__meta {
-    align-items: flex-end;
   }
 }
 
