@@ -1,22 +1,21 @@
 (function (global) {
   const STORE_KEY = "legacy-shield";
-  const BITS = 12;
-  const MIN_MS = 650;
-  const MAX_MS = 8000;
+  const BITS = 8;
+  const MAX_MS = 4000;
   const PASS_MS = 45 * 60 * 1000;
   const encoder = new TextEncoder();
 
   const buckets = {
-    read: { tokens: 10, cap: 10, refillMs: 8000, last: Date.now() },
     write: { tokens: 3, cap: 3, refillMs: 20000, last: Date.now() },
     upload: { tokens: 4, cap: 4, refillMs: 16000, last: Date.now() },
     hook: { tokens: 3, cap: 3, refillMs: 30000, last: Date.now() }
   };
 
-  let readyResolve;
-  const ready = new Promise(function (resolve) {
-    readyResolve = resolve;
+  let writeReadyResolve;
+  const writeReady = new Promise(function (resolve) {
+    writeReadyResolve = resolve;
   });
+  const ready = Promise.resolve();
 
   function challenge() {
     const hour = Math.floor(Date.now() / 3600000);
@@ -124,15 +123,9 @@
       return "upload";
     }
     if (verb === "GET" || verb === "HEAD") {
-      if (href.indexOf("/img/") !== -1 || href.indexOf("telegra.ph") !== -1 ||
-          href.indexOf("te.legra.ph") !== -1) {
-        return "media";
-      }
+      return "read";
     }
-    if (verb !== "GET" && verb !== "HEAD") {
-      return "write";
-    }
-    return "read";
+    return "write";
   }
 
   function refill(bucket) {
@@ -143,7 +136,10 @@
   }
 
   function take(kind) {
-    const bucket = buckets[kind] || buckets.read;
+    const bucket = buckets[kind];
+    if (!bucket) {
+      return Promise.resolve();
+    }
     refill(bucket);
     if (bucket.tokens >= 1) {
       bucket.tokens -= 1;
@@ -158,21 +154,12 @@
   function guardedFetch(url, opts) {
     const options = opts || {};
     const kind = classify(url, options.method);
-    return ready.then(function () {
-      const gate = kind === "media" ? Promise.resolve() : take(kind);
-      return gate.then(function () {
-        return window.fetch(url, options).then(function (res) {
-          if (res.status !== 429) {
-            return res;
-          }
-          const retry = Number(res.headers.get("Retry-After"));
-          const wait = Math.min(8000, (retry > 0 ? retry : 2) * 1000);
-          return sleep(wait).then(function () {
-            return take(kind === "media" ? "read" : kind).then(function () {
-              return window.fetch(url, options);
-            });
-          });
-        });
+    if (kind === "read") {
+      return window.fetch(url, options);
+    }
+    return writeReady.then(function () {
+      return take(kind).then(function () {
+        return window.fetch(url, options);
       });
     });
   }
@@ -183,15 +170,13 @@
     if (!root) {
       return;
     }
+    root.hidden = true;
     root.classList.add("is-off");
     root.setAttribute("aria-hidden", "true");
-    window.setTimeout(function () {
-      root.hidden = true;
-    }, 280);
   }
 
   function start() {
-    const started = Date.now();
+    release();
     const ch = challenge();
     const saved = readPass();
     const job = saved
@@ -202,22 +187,17 @@
       })
       : solve(ch);
 
-    const timed = Promise.race([
+    Promise.race([
       job,
       sleep(MAX_MS).then(function () {
         return 0;
       })
-    ]);
-
-    timed.then(function (nonce) {
+    ]).then(function (nonce) {
       writePass(ch, nonce);
-      const wait = saved ? 0 : Math.max(0, MIN_MS - (Date.now() - started));
-      return sleep(wait);
     }).catch(function () {
       return null;
     }).then(function () {
-      release();
-      readyResolve();
+      writeReadyResolve();
     });
   }
 

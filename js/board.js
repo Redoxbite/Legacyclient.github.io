@@ -23,6 +23,10 @@
   let pendingDownload = null;
 
   function net(url, opts) {
+    const method = String((opts && opts.method) || "GET").toUpperCase();
+    if (method === "GET" || method === "HEAD") {
+      return window["fetch"](url, opts);
+    }
     const shield = window.LEGACY_SHIELD;
     if (shield && typeof shield.fetch === "function") {
       return shield.fetch(url, opts);
@@ -198,24 +202,25 @@
     return api ? api.publicUrl(preview) : preview;
   }
 
-  function fillPreview(img, post, eager) {
+  function fillPreview(img, post) {
     if (!img) {
       return;
     }
     img.decoding = "async";
-    img.loading = eager ? "eager" : "lazy";
-    if (eager) {
-      img.setAttribute("fetchpriority", "high");
-    }
+    img.loading = "eager";
+    img.referrerPolicy = "no-referrer";
     const preview = post && post.preview;
     const api = cloud();
     if (api && api.isBoardPreview && api.isBoardPreview(preview)) {
-      img.src = DEFAULT_COVER;
-      api.loadPreview(preview).then(function (src) {
-        if (src) {
-          img.src = src;
-        }
-      });
+      if (api.loadPreview) {
+        api.loadPreview(preview).then(function (src) {
+          if (src) {
+            img.src = src;
+          } else {
+            img.src = DEFAULT_COVER;
+          }
+        });
+      }
       return;
     }
     img.src = previewSrc(post);
@@ -908,7 +913,7 @@
     return days + " days ago";
   }
 
-  function postCard(post, index) {
+  function postCard(post) {
     const article = document.createElement("article");
     article.className = post.category === "packs" ? "post-card" : "post-card post-card--shot";
     article.tabIndex = 0;
@@ -917,7 +922,7 @@
     media.className = "post-card__media";
     const picture = document.createElement("img");
     picture.className = "post-card__picture";
-    fillPreview(picture, post, index < 6);
+    fillPreview(picture, post);
     picture.alt = "";
     picture.addEventListener("error", function () {
       if (picture.getAttribute("src") !== DEFAULT_COVER) {
@@ -1218,7 +1223,7 @@
     activePost = post;
     const hasPreview = Boolean(post.preview);
     if (postViewPicture) {
-      fillPreview(postViewPicture, post, true);
+      fillPreview(postViewPicture, post);
       postViewPicture.hidden = false;
     }
     if (postViewHint) {
@@ -1258,7 +1263,7 @@
     if (!target || !target.preview || !zoomPicture) {
       return;
     }
-    fillPreview(zoomPicture, target, true);
+    fillPreview(zoomPicture, target);
     if (zoomDialog && typeof zoomDialog.showModal === "function") {
       if (!zoomDialog.open) {
         zoomDialog.showModal();

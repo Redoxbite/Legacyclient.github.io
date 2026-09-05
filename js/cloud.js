@@ -14,6 +14,10 @@
   const previewJobs = {};
 
   function net(url, opts) {
+    const method = String((opts && opts.method) || "GET").toUpperCase();
+    if (method === "GET" || method === "HEAD") {
+      return window["fetch"](url, opts);
+    }
     const shield = global.LEGACY_SHIELD;
     if (shield && typeof shield.fetch === "function") {
       return shield.fetch(url, opts);
@@ -205,6 +209,13 @@
       }).sort(function (a, b) {
         return (b.createdAt || 0) - (a.createdAt || 0);
       });
+    }).then(function (posts) {
+      posts.forEach(function (post) {
+        if (isBoardPreview(post && post.preview)) {
+          loadPreview(post.preview);
+        }
+      });
+      return posts;
     });
     loadPostsJob = job;
     job.finally(function () {
