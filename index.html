@@ -18,7 +18,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,600;1,700;1,800;1,900&family=Inter:ital,wght@0,400;0,500;0,600;1,700&display=swap" rel="stylesheet">
   <meta http-equiv="Cache-Control" content="no-store">
-  <link rel="stylesheet" href="css/board.css?v=desk11">
+  <link rel="stylesheet" href="css/board.css?v=desk12">
 </head>
 <body>
   <a class="skip-link" href="#home">Skip to content</a>
@@ -40,6 +40,7 @@
         <a class="site-nav__link" href="#home">Home</a>
         <a class="site-nav__link" href="#scammers">Scammers</a>
         <a class="site-nav__link" href="#packs">Texture packs</a>
+        <a class="site-nav__link" href="#retards">🤡 Retards</a>
         <a class="site-nav__link" href="#submit" data-owner-only hidden>Submit</a>
         <button class="site-nav__link" type="button" data-auth-open data-auth-guest>Verify</button>
       </nav>
@@ -83,6 +84,11 @@
               <p id="packCount">0 posted</p>
               <span class="cat-card__meta">Open list</span>
             </a>
+            <a class="cat-card glass" href="#retards">
+              <h3>🤡 Retards</h3>
+              <p id="retardCount">0 posted</p>
+              <span class="cat-card__meta">Open list</span>
+            </a>
           </div>
         </div>
       </section>
@@ -113,6 +119,7 @@
             <select class="contact__field" id="submitCategory" name="category" required>
               <option value="scammers">Scammers</option>
               <option value="packs">Texture packs</option>
+              <option value="retards">🤡 Retards</option>
               <option value="other">Other</option>
             </select>
             <label class="file-field" id="submitPackTypeWrap" hidden for="submitPackType">
@@ -161,6 +168,7 @@
             <select class="contact__field" id="importCategory" name="category" required>
               <option value="scammers">Scammers</option>
               <option value="packs">Texture packs</option>
+              <option value="retards">🤡 Retards</option>
               <option value="other">Other</option>
             </select>
             <label class="file-field" id="importPackTypeWrap" hidden for="importPackType">
@@ -226,7 +234,7 @@
           <img class="site-header__logo" src="assets/logo.png" alt="" width="40" height="28">
           <span class="site-header__name">Legacy Client</span>
         </a>
-        <p class="site-footer__copy">Scammers · Texture packs</p>
+        <p class="site-footer__copy">Scammers · Texture packs · 🤡 Retards</p>
       </div>
     </div>
   </footer>
@@ -268,6 +276,7 @@
       <select class="contact__field" id="editCategory" name="category" required>
         <option value="scammers">Scammers</option>
         <option value="packs">Texture packs</option>
+        <option value="retards">🤡 Retards</option>
         <option value="other">Other</option>
       </select>
       <label class="file-field" id="editPackTypeWrap" hidden for="editPackType">
@@ -299,8 +308,8 @@
     </form>
   </dialog>
 
-  <script src="js/config.js?v=desk11"></script>
-  <script src="js/cloud.js?v=desk11"></script>
-  <script src="js/board.js?v=desk11"></script>
+  <script src="js/config.js?v=desk12"></script>
+  <script src="js/cloud.js?v=desk12"></script>
+  <script src="js/board.js?v=desk12"></script>
 </body>
 </html>

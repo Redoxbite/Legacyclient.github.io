@@ -8,6 +8,7 @@
   const LABELS = {
     scammers: "Scammers",
     packs: "Texture packs",
+    retards: "🤡 Retards",
     other: "Other"
   };
   const PACK_TYPES = {
@@ -835,7 +836,7 @@
     if (hash === "packs-sky" || hash === "packs-pvp" || hash === "packs-custom") {
       return { filter: "packs", packType: hash.slice(6) };
     }
-    if (hash === "scammers" || hash === "packs" || hash === "other") {
+    if (hash === "scammers" || hash === "packs" || hash === "retards" || hash === "other") {
       return { filter: hash, packType: "" };
     }
     return { filter: "all", packType: "" };
@@ -1601,8 +1602,10 @@
 
     const scammers = readPosts().filter(function (p) { return p.category === "scammers"; }).length;
     const packs = readPosts().filter(function (p) { return p.category === "packs"; }).length;
+    const retards = readPosts().filter(function (p) { return p.category === "retards"; }).length;
     const scammerCount = document.getElementById("scammerCount");
     const packCount = document.getElementById("packCount");
+    const retardCount = document.getElementById("retardCount");
     const listTitle = document.getElementById("listTitle");
     const packFilters = document.getElementById("packFilters");
     if (scammerCount) {
@@ -1610,6 +1613,9 @@
     }
     if (packCount) {
       packCount.textContent = packs + " posted";
+    }
+    if (retardCount) {
+      retardCount.textContent = retards + " posted";
     }
     if (listTitle) {
       if (filter === "packs" && packType) {
