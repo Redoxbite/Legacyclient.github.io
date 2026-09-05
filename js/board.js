@@ -462,15 +462,42 @@
   }
 
   function postFiles(post) {
-    if (post && Array.isArray(post.files) && post.files.length) {
+    if (post && Array.isArray(post.files)) {
       return post.files;
     }
-    return [{
-      id: "main",
-      name: (post && post.fileName) || "download",
-      size: (post && post.fileSize) || 0,
-      downloads: (post && post.downloads) || 0
-    }];
+    if (post && post.fileName) {
+      return [{
+        id: "main",
+        name: post.fileName,
+        size: post.fileSize || 0,
+        downloads: post.downloads || 0
+      }];
+    }
+    return [];
+  }
+
+  function needsDownloadFile(category) {
+    return category === "packs" || category === "old-bypasses" || category === "ai-bypass";
+  }
+
+  function fileMetaFrom(file) {
+    if (!file) {
+      return {
+        fileName: "",
+        fileSize: 0,
+        files: []
+      };
+    }
+    return {
+      fileName: file.name,
+      fileSize: file.size,
+      files: [{
+        id: "main",
+        name: file.name,
+        size: file.size,
+        downloads: 0
+      }]
+    };
   }
 
   function totalDownloads(post) {
@@ -896,10 +923,13 @@
     const time = document.createElement("p");
     time.className = "post-card__time";
     time.textContent = timeAgo(post.createdAt);
-    const stat = document.createElement("span");
-    stat.className = "post-card__stat";
-    stat.append(svgNode("M12 4v12m0 0l-4-4m4 4l4-4M5 19h14"), document.createTextNode(String(totalDownloads(post))));
-    foot.append(title, time, stat);
+    foot.append(title, time);
+    if (postFiles(post).length) {
+      const stat = document.createElement("span");
+      stat.className = "post-card__stat";
+      stat.append(svgNode("M12 4v12m0 0l-4-4m4 4l4-4M5 19h14"), document.createTextNode(String(totalDownloads(post))));
+      foot.append(stat);
+    }
     article.append(media, foot);
     article.addEventListener("click", function () {
       openPost(post);
@@ -1019,11 +1049,17 @@
   }
 
   function fillDownloadRows(post) {
+    const files = postFiles(post);
+    const label = document.getElementById("postDownloadsLabel");
+    if (label) {
+      label.hidden = !files.length;
+    }
     if (!postViewDownloads) {
       return;
     }
+    postViewDownloads.hidden = !files.length;
     postViewDownloads.replaceChildren();
-    postFiles(post).forEach(function (entry) {
+    files.forEach(function (entry) {
       const row = document.createElement("div");
       row.className = "dl";
       const icon = document.createElement("span");
@@ -1704,8 +1740,8 @@
     renderPosts();
   });
 
-  function checkFile(file) {
-    if (!file) {
+  function checkFile(file, required) {
+    if (required && !file) {
       return "Pick a file.";
     }
     return "";
@@ -1903,11 +1939,34 @@
     }
   }
 
+  function syncFileFields() {
+    const submitFile = document.getElementById("submitFile");
+    const submitFileWrap = document.getElementById("submitFileWrap");
+    const importFile = document.getElementById("importFile");
+    const importFileWrap = document.getElementById("importFileWrap");
+    const submitNeeds = submitCategory ? needsDownloadFile(submitCategory.value) : false;
+    if (submitFile) {
+      submitFile.required = submitNeeds;
+    }
+    if (submitFileWrap) {
+      submitFileWrap.hidden = !submitNeeds;
+    }
+    const importCategory = document.getElementById("importCategory");
+    const importNeeds = importCategory ? needsDownloadFile(importCategory.value) : false;
+    if (importFile) {
+      importFile.required = importNeeds;
+    }
+    if (importFileWrap) {
+      importFileWrap.hidden = !importNeeds;
+    }
+  }
+
   function syncPackPreview() {
     if (packPreview) {
       packPreview.hidden = false;
     }
     syncPackTypeFields();
+    syncFileFields();
   }
 
   function syncPackTypeFields() {
@@ -1924,6 +1983,7 @@
     if (editWrap && editCategory) {
       editWrap.hidden = editCategory.value !== "packs";
     }
+    syncFileFields();
   }
 
   if (submitCategory) {
@@ -1984,7 +2044,8 @@
       const description = document.getElementById("submitDesc").value.trim();
       const file = document.getElementById("submitFile").files[0];
       const picture = submitPreview ? submitPreview.files[0] : null;
-      const err = checkFile(file);
+      const wantFile = needsDownloadFile(category);
+      const err = checkFile(file, wantFile);
       if (err) {
         submitNote.hidden = false;
         submitNote.textContent = err;
@@ -1997,7 +2058,7 @@
       }
       submitNote.hidden = false;
       submitNote.textContent = "Publishing…";
-      const post = {
+      const post = Object.assign({
         id: String(Date.now()),
         title: title,
         description: description,
@@ -2005,33 +2066,29 @@
         packType: category === "packs"
           ? ((document.getElementById("submitPackType") || {}).value || "custom")
           : "",
-        fileName: file.name,
-        fileSize: file.size,
         downloads: 0,
-        files: [{
-          id: "main",
-          name: file.name,
-          size: file.size,
-          downloads: 0
-        }],
         createdAt: Date.now()
-      };
+      }, fileMetaFrom(wantFile ? file : null));
       const previewReady = picture ? previewThumb(picture) : Promise.resolve("");
       previewReady.then(function (preview) {
         if (preview) {
           post.preview = preview;
         }
-        const files = [new File([file], safeFileName(file.name, "pack.zip"), {
-          type: file.type || "application/zip"
-        })];
+        const files = [];
+        if (file) {
+          files.push(new File([file], safeFileName(file.name, "pack.zip"), {
+            type: file.type || "application/zip"
+          }));
+        }
         let imageName = "";
         if (preview) {
           imageName = "pack-preview.jpg";
           files.push(dataUrlToFile(preview, imageName));
         }
-        return savePostFile(post.id, file).catch(function () {
+        const saved = file ? savePostFile(post.id, file).catch(function () {
           return null;
-        }).then(function () {
+        }) : Promise.resolve(null);
+        return saved.then(function () {
           return sendWebhook({
             title: title,
             description: description,
@@ -2047,11 +2104,12 @@
         const posts = readLocalPosts();
         posts.push(post);
         writeJson(POSTS_KEY, posts);
-        return publishPostToCloud(post, [{
+        const blobs = file ? [{
           id: "main",
           name: file.name,
           blob: file
-        }]).then(function () {
+        }] : [];
+        return publishPostToCloud(post, blobs).then(function () {
           submitForm.reset();
           clearPackPicture();
           syncPackPreview();
@@ -2083,7 +2141,8 @@
       const category = document.getElementById("importCategory").value;
       const description = document.getElementById("importDesc").value.trim();
       const file = document.getElementById("importFile").files[0];
-      const err = checkFile(file);
+      const wantFile = needsDownloadFile(category);
+      const err = checkFile(file, wantFile);
       if (err) {
         importNote.hidden = false;
         importNote.textContent = err;
@@ -2091,7 +2150,7 @@
       }
       importNote.hidden = false;
       importNote.textContent = "Publishing…";
-      const post = {
+      const post = Object.assign({
         id: String(Date.now()),
         title: title,
         description: description,
@@ -2099,42 +2158,38 @@
         packType: category === "packs"
           ? ((document.getElementById("importPackType") || {}).value || "custom")
           : "",
-        fileName: file.name,
-        fileSize: file.size,
         downloads: 0,
-        files: [{
-          id: "main",
-          name: file.name,
-          size: file.size,
-          downloads: 0
-        }],
         createdAt: Date.now()
-      };
-      savePostFile(post.id, file).catch(function () {
+      }, fileMetaFrom(wantFile ? file : null));
+      const saved = file ? savePostFile(post.id, file).catch(function () {
         return null;
-      }).then(function () {
+      }) : Promise.resolve(null);
+      saved.then(function () {
         sendWebhook({
           title: title,
           description: description,
           category: category,
           from: "owner",
           kind: "owner-import"
-        }, file).catch(function () {
+        }, file ? [file] : []).catch(function () {
           return null;
         });
         const posts = readLocalPosts();
         posts.push(post);
         writeJson(POSTS_KEY, posts);
-        return publishPostToCloud(post, [{
+        const blobs = file ? [{
           id: "main",
           name: file.name,
           blob: file
-        }]).then(function () {
+        }] : [];
+        return publishPostToCloud(post, blobs).then(function () {
           importForm.reset();
+          syncPackTypeFields();
           importNote.textContent = "Published for everyone on " + categoryLabel(category) + ".";
           renderPosts();
         }).catch(function (err) {
           importForm.reset();
+          syncPackTypeFields();
           importNote.textContent = (err && err.message) ||
             "Saved on this device only. Try publish again.";
           renderPosts();
