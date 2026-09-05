@@ -7,6 +7,8 @@
   const POSTS_PATH = "data/posts.json";
   const API = "https://api.github.com/repos/" + OWNER + "/" + REPO + "/contents/";
   const RAW = "https://raw.githubusercontent.com/" + OWNER + "/" + REPO + "/" + BRANCH + "/";
+  const BOARD_URL = cfg.boardStore || "https://mantledb.sh/v2/legacyclientboard/posts";
+  const BOARD_KEY = cfg.boardKey || "";
 
   function getToken() {
     try {
@@ -27,6 +29,10 @@
 
   function hasToken() {
     return Boolean(getToken());
+  }
+
+  function canPublish() {
+    return Boolean(BOARD_URL && BOARD_KEY) || hasToken();
   }
 
   function encodePath(path) {
@@ -112,6 +118,12 @@
   }
 
   function deleteFile(path, message) {
+    if (!path || path.indexOf("http") === 0) {
+      return Promise.resolve(null);
+    }
+    if (!hasToken()) {
+      return Promise.resolve(null);
+    }
     return getMeta(path).then(function (meta) {
       if (!meta || !meta.sha) {
         return null;
@@ -128,7 +140,17 @@
     });
   }
 
-  function loadPosts() {
+  function parseList(data) {
+    if (Array.isArray(data)) {
+      return data;
+    }
+    if (data && Array.isArray(data.items)) {
+      return data.items;
+    }
+    return [];
+  }
+
+  function loadGithubPosts() {
     return fetch(RAW + POSTS_PATH + "?t=" + Date.now(), { cache: "no-store" }).then(function (res) {
       if (!res.ok) {
         throw new Error("remote");
@@ -141,36 +163,248 @@
         }
         return res.json();
       });
-    }).then(function (data) {
-      return Array.isArray(data) ? data : [];
-    }).catch(function () {
+    }).then(parseList).catch(function () {
       return [];
     });
   }
 
-  function savePosts(posts, message) {
+  function loadPosts() {
+    return fetch(BOARD_URL, { cache: "no-store" }).then(function (res) {
+      if (!res.ok) {
+        throw new Error("board");
+      }
+      return res.json();
+    }).then(parseList).catch(function () {
+      return loadGithubPosts();
+    });
+  }
+
+  function saveGithubPosts(posts, message) {
     const json = JSON.stringify(posts, null, 2);
     const base64 = btoa(unescape(encodeURIComponent(json)));
     return putFile(POSTS_PATH, base64, message || "Update board posts");
   }
 
-  function uploadBlob(path, blob, message) {
-    return blobToBase64(blob).then(function (base64) {
-      return putFile(path, base64, message);
+  function savePosts(posts, message) {
+    const jobs = [];
+    if (BOARD_URL && BOARD_KEY) {
+      jobs.push(fetch(BOARD_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Mantle-Key": BOARD_KEY
+        },
+        body: JSON.stringify({ items: posts })
+      }).then(function (res) {
+        if (!res.ok) {
+          throw new Error("Could not publish for everyone.");
+        }
+        return res.json();
+      }));
+    }
+    if (hasToken()) {
+      jobs.push(saveGithubPosts(posts, message).catch(function () {
+        return null;
+      }));
+    }
+    if (!jobs.length) {
+      return Promise.reject(new Error("Could not publish for everyone."));
+    }
+    return Promise.all(jobs);
+  }
+
+  function isImageBlob(blob, name) {
+    if (blob && blob.type && blob.type.indexOf("image/") === 0) {
+      return true;
+    }
+    return /\.(png|jpe?g|webp|gif)$/i.test(name || "");
+  }
+
+  function baseName(path) {
+    const parts = String(path || "file.bin").split("/");
+    return parts[parts.length - 1] || "file.bin";
+  }
+
+  function boardOrigin() {
+    return BOARD_URL.replace(/\/posts\/?$/, "");
+  }
+
+  function boardImgUrl(postId) {
+    return boardOrigin() + "/img/" + encodeURIComponent(postId);
+  }
+
+  function setPublicRead(path) {
+    const relative = path.replace(boardOrigin() + "/", "");
+    return fetch("https://mantledb.sh/v2/visibility/legacyclientboard/" + relative, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Mantle-Key": BOARD_KEY
+      },
+      body: JSON.stringify({ public_read: true })
     });
+  }
+
+  function blobToCompactDataUrl(blob) {
+    return new Promise(function (resolve, reject) {
+      const reader = new FileReader();
+      reader.onload = function () {
+        const image = new Image();
+        image.onload = function () {
+          const canvas = document.createElement("canvas");
+          const scale = Math.min(960 / image.width, 540 / image.height, 1);
+          canvas.width = Math.max(1, Math.round(image.width * scale));
+          canvas.height = Math.max(1, Math.round(image.height * scale));
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+          let quality = 0.72;
+          let url = canvas.toDataURL("image/jpeg", quality);
+          while (url.length > 58000 && quality > 0.32) {
+            quality -= 0.08;
+            url = canvas.toDataURL("image/jpeg", quality);
+          }
+          if (url.length > 58000) {
+            reject(new Error("preview too large"));
+            return;
+          }
+          resolve(url);
+        };
+        image.onerror = function () {
+          reject(new Error("preview"));
+        };
+        image.src = String(reader.result || "");
+      };
+      reader.onerror = function () {
+        reject(reader.error);
+      };
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  function storeBoardImage(postId, blob) {
+    const url = boardImgUrl(postId);
+    return blobToCompactDataUrl(blob).then(function (src) {
+      return fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Mantle-Key": BOARD_KEY
+        },
+        body: JSON.stringify({ src: src })
+      }).then(function (res) {
+        if (!res.ok) {
+          throw new Error("Could not publish screenshot.");
+        }
+        return setPublicRead(url).then(function () {
+          return { url: url, path: url };
+        });
+      });
+    });
+  }
+
+  function loadPreview(preview) {
+    const url = isBoardPreview(preview) ? preview : "";
+    if (!url) {
+      return Promise.resolve("");
+    }
+    return fetch(url, { cache: "no-store" }).then(function (res) {
+      if (!res.ok) {
+        throw new Error("preview");
+      }
+      return res.json();
+    }).then(function (data) {
+      return data && data.src ? data.src : "";
+    }).catch(function () {
+      return "";
+    });
+  }
+
+  function isBoardPreview(value) {
+    return /mantledb\.sh\/v2\/.+\/img\//i.test(String(value || ""));
+  }
+
+  function uploadTelegraph(blob, name) {
+    const body = new FormData();
+    body.append("file", blob, name);
+    return fetch("https://telegra.ph/upload", { method: "POST", body: body }).then(function (res) {
+      return res.json().then(function (data) {
+        if (!res.ok) {
+          throw new Error("image host");
+        }
+        const src = Array.isArray(data) && data[0] && data[0].src;
+        if (!src || typeof src !== "string") {
+          throw new Error("image host");
+        }
+        const url = src.indexOf("http") === 0 ? src : "https://telegra.ph" + src;
+        return { url: url, path: url };
+      });
+    });
+  }
+
+  function uploadGofile(blob, name) {
+    const body = new FormData();
+    body.append("file", blob, name);
+    return fetch("https://upload.gofile.io/uploadfile", { method: "POST", body: body }).then(function (res) {
+      return res.json().then(function (data) {
+        if (!res.ok || !data || data.status !== "ok" || !data.data || !data.data.downloadPage) {
+          throw new Error("Could not upload " + name);
+        }
+        const url = data.data.downloadPage;
+        return { url: url, path: url };
+      });
+    });
+  }
+
+  function uploadPublic(name, blob) {
+    if (isImageBlob(blob, name)) {
+      return uploadTelegraph(blob, name).catch(function () {
+        return uploadGofile(blob, name);
+      });
+    }
+    return uploadGofile(blob, name);
+  }
+
+  function uploadPreview(postId, blob) {
+    return uploadTelegraph(blob, "preview.jpg").catch(function () {
+      return storeBoardImage(postId, blob);
+    });
+  }
+
+  function uploadBlob(path, blob, message) {
+    const name = baseName(path);
+    const publicJob = uploadPublic(name, blob);
+    if (!hasToken()) {
+      return publicJob;
+    }
+    return publicJob.then(function (uploaded) {
+      return blobToBase64(blob).then(function (base64) {
+        const ghPath = path.indexOf("http") === 0 ? filePath("misc", name) : path;
+        return putFile(ghPath, base64, message).then(function () {
+          return uploaded;
+        }).catch(function () {
+          return uploaded;
+        });
+      });
+    });
+  }
+
+  function filePath(postId, name) {
+    return "files/" + postId + "/" + name;
   }
 
   global.LEGACY_CLOUD = {
     hasToken: hasToken,
+    canPublish: canPublish,
     getToken: getToken,
     setToken: setToken,
     publicUrl: publicUrl,
     loadPosts: loadPosts,
     savePosts: savePosts,
     uploadBlob: uploadBlob,
+    uploadPreview: uploadPreview,
+    loadPreview: loadPreview,
+    isBoardPreview: isBoardPreview,
     deleteFile: deleteFile,
-    filePath: function (postId, name) {
-      return "files/" + postId + "/" + name;
-    }
+    filePath: filePath
   };
 })(window);

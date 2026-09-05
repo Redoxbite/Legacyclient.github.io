@@ -10,5 +10,7 @@ window.LEGACY = {
   githubOwner: "Redoxbite",
   githubRepo: "Legacyclient.github.io",
   githubBranch: "main",
-  tokenKey: "legacy-github-token"
+  tokenKey: "legacy-github-token",
+  boardStore: "https://mantledb.sh/v2/legacyclientboard/posts",
+  boardKey: "454742b233283cfb642bcac227f83a8a2b75fd6b3d7c823d44b78ee4dc4b48e3"
 };

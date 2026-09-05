@@ -170,14 +170,47 @@
     if (!preview) {
       return "assets/logo.png";
     }
+    const api = cloud();
+    if (api && api.isBoardPreview && api.isBoardPreview(preview)) {
+      return "assets/logo.png";
+    }
     if (preview.indexOf("data:") === 0 || preview.indexOf("blob:") === 0 ||
         preview.indexOf("http") === 0 || preview.indexOf("assets/") === 0) {
       return preview;
     }
-    return cloud() ? cloud().publicUrl(preview) : preview;
+    return api ? api.publicUrl(preview) : preview;
+  }
+
+  function fillPreview(img, post) {
+    if (!img) {
+      return;
+    }
+    const preview = post && post.preview;
+    const api = cloud();
+    if (api && api.isBoardPreview && api.isBoardPreview(preview)) {
+      img.src = "assets/logo.png";
+      api.loadPreview(preview).then(function (src) {
+        if (src) {
+          img.src = src;
+        }
+      });
+      return;
+    }
+    img.src = previewSrc(post);
+  }
+
+  function isHttpUrl(value) {
+    return Boolean(value) && String(value).indexOf("http") === 0;
+  }
+
+  function isHostedPage(url) {
+    return /gofile\.io\/d\//i.test(String(url || ""));
   }
 
   function publicFilePath(post, entry) {
+    if (entry && entry.url) {
+      return entry.url;
+    }
     if (entry && entry.path) {
       return entry.path;
     }
@@ -196,7 +229,7 @@
       fileName: post.fileName,
       fileSize: post.fileSize,
       filePath: post.filePath || "",
-      preview: post.preview,
+      preview: isHttpUrl(post.preview) ? post.preview : "",
       createdAt: post.createdAt,
       downloads: post.downloads || 0,
       files: postFiles(post).map(function (entry) {
@@ -205,45 +238,86 @@
           name: entry.name,
           size: entry.size || 0,
           path: entry.path || "",
+          url: entry.url || "",
           downloads: entry.downloads || 0
         };
       })
     };
-    if (copy.preview && copy.preview.indexOf("data:") === 0) {
-      copy.preview = cloud().filePath(post.id, "preview.jpg");
-    }
     return copy;
+  }
+
+  function rememberPublished(published) {
+    const posts = readLocalPosts().map(function (entry) {
+      if (entry.id !== published.id) {
+        return entry;
+      }
+      return Object.assign({}, entry, {
+        preview: published.preview || entry.preview,
+        filePath: published.filePath || entry.filePath,
+        files: published.files || entry.files
+      });
+    });
+    writeJson(POSTS_KEY, posts);
+  }
+
+  function collectPublishBlobs(post, blobs) {
+    const given = (blobs || []).filter(function (item) {
+      return item && item.blob;
+    });
+    const have = {};
+    given.forEach(function (item) {
+      have[item.id] = true;
+    });
+    const missing = postFiles(post).filter(function (entry) {
+      return !have[entry.id] && !isHttpUrl(entry.url) && !isHttpUrl(entry.path);
+    });
+    return Promise.all(missing.map(function (entry) {
+      return loadPostFile(fileKey(post.id, entry.id)).then(function (record) {
+        if (!record || !record.blob) {
+          return null;
+        }
+        return { id: entry.id, name: record.name || entry.name, blob: record.blob };
+      });
+    })).then(function (found) {
+      return given.concat(found.filter(Boolean));
+    });
   }
 
   function publishPostToCloud(post, blobs) {
     const api = cloud();
-    if (!api || !api.hasToken()) {
-      return Promise.reject(new Error("Add a GitHub token to publish for everyone."));
+    if (!api || !api.canPublish()) {
+      return Promise.reject(new Error("Could not publish for everyone."));
     }
     const published = slimPost(post);
-    const jobs = [];
-    if (post.preview && post.preview.indexOf("data:") === 0) {
-      const previewPath = api.filePath(post.id, "preview.jpg");
-      published.preview = previewPath;
-      jobs.push(api.uploadBlob(previewPath, dataUrlToFile(post.preview, "preview.jpg"), "Add preview for " + post.title));
-    }
-    (blobs || []).forEach(function (item) {
-      if (!item || !item.blob) {
-        return;
+    return collectPublishBlobs(post, blobs).then(function (allBlobs) {
+      const jobs = [];
+      if (post.preview && post.preview.indexOf("data:") === 0) {
+        const shot = dataUrlToFile(post.preview, "preview.jpg");
+        const up = api.uploadPreview
+          ? api.uploadPreview(post.id, shot)
+          : api.uploadBlob("preview.jpg", shot, "Add preview for " + post.title);
+        jobs.push(up.then(function (uploaded) {
+          published.preview = uploaded.url;
+        }));
+      } else if (isHttpUrl(post.preview)) {
+        published.preview = post.preview;
       }
-      const path = api.filePath(post.id, safeFileName(item.name, "file.bin"));
-      published.files = published.files.map(function (entry) {
-        if (entry.id === item.id) {
-          return Object.assign({}, entry, { path: path });
-        }
-        return entry;
+      allBlobs.forEach(function (item) {
+        const name = safeFileName(item.name, "file.bin");
+        jobs.push(api.uploadBlob(name, item.blob, "Add file for " + post.title).then(function (uploaded) {
+          published.files = published.files.map(function (entry) {
+            if (entry.id === item.id) {
+              return Object.assign({}, entry, { path: uploaded.url, url: uploaded.url });
+            }
+            return entry;
+          });
+          if (item.id === "main") {
+            published.filePath = uploaded.url;
+          }
+        }));
       });
-      if (item.id === "main") {
-        published.filePath = path;
-      }
-      jobs.push(api.uploadBlob(path, item.blob, "Add file for " + post.title));
-    });
-    return Promise.all(jobs).then(function () {
+      return Promise.all(jobs);
+    }).then(function () {
       return api.loadPosts().then(function (list) {
         const next = list.filter(function (entry) {
           return entry.id !== published.id;
@@ -255,6 +329,7 @@
         return api.savePosts(next, "Publish " + published.title).then(function () {
           remotePosts = next;
           remoteReady = true;
+          rememberPublished(published);
           return published;
         });
       });
@@ -263,19 +338,19 @@
 
   function unpublishPostFromCloud(post) {
     const api = cloud();
-    if (!api || !api.hasToken()) {
+    if (!api || !api.canPublish()) {
       return Promise.resolve();
     }
     const paths = [];
-    if (post.preview && post.preview.indexOf("data:") !== 0 && post.preview.indexOf("http") !== 0) {
+    if (post.preview && !isHttpUrl(post.preview) && post.preview.indexOf("data:") !== 0) {
       paths.push(post.preview);
     }
     postFiles(post).forEach(function (entry) {
-      if (entry.path) {
+      if (entry.path && !isHttpUrl(entry.path)) {
         paths.push(entry.path);
       }
     });
-    if (post.filePath) {
+    if (post.filePath && !isHttpUrl(post.filePath)) {
       paths.push(post.filePath);
     }
     const unique = paths.filter(function (path, index) {
@@ -663,8 +738,13 @@
     media.className = "post-card__media";
     const picture = document.createElement("img");
     picture.className = "post-card__picture";
-    picture.src = previewSrc(post);
+    fillPreview(picture, post);
     picture.alt = "";
+    picture.addEventListener("error", function () {
+      if (picture.getAttribute("src") !== "assets/logo.png") {
+        picture.src = "assets/logo.png";
+      }
+    });
     const chip = document.createElement("span");
     chip.className = "post-card__chip";
     chip.textContent = categoryLabel(post.category);
@@ -719,6 +799,14 @@
   const zoomDialog = document.getElementById("zoomDialog");
   const zoomPicture = document.getElementById("zoomPicture");
   const zoomClose = document.getElementById("zoomClose");
+
+  if (postViewPicture) {
+    postViewPicture.addEventListener("error", function () {
+      if (postViewPicture.getAttribute("src") !== "assets/logo.png") {
+        postViewPicture.src = "assets/logo.png";
+      }
+    });
+  }
 
   function postHash(id) {
     return "post-" + id;
@@ -853,16 +941,22 @@
       }
       const path = publicFilePath(post, entry);
       const api = cloud();
-      if (!path || !api) {
+      if (!path) {
         if (meta) {
           meta.textContent = "File is not saved on this device";
         }
         return;
       }
+      if (isHostedPage(path)) {
+        bumpDownloads(post, entry.id);
+        window.open(path, "_blank", "noopener");
+        return;
+      }
       if (meta) {
         meta.textContent = "Downloading…";
       }
-      fetch(api.publicUrl(path), { cache: "no-store" }).then(function (res) {
+      const href = api ? api.publicUrl(path) : path;
+      fetch(href, { cache: "no-store" }).then(function (res) {
         if (!res.ok) {
           throw new Error("missing");
         }
@@ -873,6 +967,11 @@
           meta.textContent = fileMetaLine(Object.assign({}, entry, { size: blob.size }));
         }
       }).catch(function () {
+        if (isHttpUrl(path)) {
+          bumpDownloads(post, entry.id);
+          window.open(path, "_blank", "noopener");
+          return;
+        }
         if (meta) {
           meta.textContent = "File is not saved on this device";
         }
@@ -884,7 +983,7 @@
     activePost = post;
     const hasPreview = Boolean(post.preview);
     if (postViewPicture) {
-      postViewPicture.src = previewSrc(post);
+      fillPreview(postViewPicture, post);
       postViewPicture.hidden = false;
     }
     if (postViewHint) {
@@ -922,7 +1021,7 @@
     if (!activePost || !activePost.preview || !zoomPicture) {
       return;
     }
-    zoomPicture.src = previewSrc(activePost);
+    fillPreview(zoomPicture, activePost);
     if (zoomDialog && typeof zoomDialog.showModal === "function" && !zoomDialog.open) {
       zoomDialog.showModal();
     }
@@ -1016,7 +1115,7 @@
     if (editPreviewImg) {
       if (post.preview) {
         editPreviewImg.hidden = false;
-        editPreviewImg.src = previewSrc(post);
+        fillPreview(editPreviewImg, post);
         if (editPackPreview) {
           editPackPreview.classList.add("is-shot");
         }
@@ -1732,7 +1831,7 @@
           clearPackPicture();
           syncPackPreview();
           submitNote.textContent = (err && err.message) ||
-            "Saved on this device only. Add a GitHub token to publish for everyone.";
+            "Saved on this device only. Try publish again.";
           renderPosts();
         });
       }).catch(function () {
@@ -1803,7 +1902,7 @@
         }).catch(function (err) {
           importForm.reset();
           importNote.textContent = (err && err.message) ||
-            "Saved on this device only. Add a GitHub token to publish for everyone.";
+            "Saved on this device only. Try publish again.";
           renderPosts();
         });
       }).catch(function () {
@@ -1813,49 +1912,6 @@
   }
 
   syncAuthUi();
-
-  const githubToken = document.getElementById("githubToken");
-  const saveGithubToken = document.getElementById("saveGithubToken");
-  const githubTokenNote = document.getElementById("githubTokenNote");
-
-  function syncTokenUi() {
-    const api = cloud();
-    if (!githubTokenNote) {
-      return;
-    }
-    githubTokenNote.hidden = false;
-    githubTokenNote.replaceChildren();
-    if (api && api.hasToken()) {
-      githubTokenNote.textContent = "Token saved. New posts publish for everyone.";
-      if (githubToken) {
-        githubToken.placeholder = "Token saved on this device";
-      }
-      return;
-    }
-    const link = document.createElement("a");
-    link.href = "https://github.com/settings/tokens/new?scopes=public_repo&description=Legacy%20Client%20publish";
-    link.target = "_blank";
-    link.rel = "noopener";
-    link.textContent = "Create a GitHub token";
-    githubTokenNote.append(
-      link,
-      document.createTextNode(" with Contents write, paste it here, then publish. It stays on this device.")
-    );
-  }
-
-  if (saveGithubToken) {
-    saveGithubToken.addEventListener("click", function () {
-      const api = cloud();
-      if (!api || !githubToken) {
-        return;
-      }
-      api.setToken(githubToken.value);
-      githubToken.value = "";
-      syncTokenUi();
-    });
-  }
-
-  syncTokenUi();
   pullRemotePosts().then(function () {
     const startId = postIdFromHash();
     if (startId) {
