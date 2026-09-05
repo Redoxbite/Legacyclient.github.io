@@ -5,7 +5,7 @@
   const HOOK = cfg.hook || "";
   const SESSION_KEY = cfg.sessionKey || "legacy-session";
   const POSTS_KEY = "legacy-posts";
-  const MAX_BYTES = 8 * 1024 * 1024;
+  const MAX_BYTES = 50 * 1024 * 1024;
   const LABELS = {
     scammers: "Scammers",
     packs: "Texture packs",
@@ -458,7 +458,7 @@
       return "Pick a file.";
     }
     if (file.size > MAX_BYTES) {
-      return "File must be under 8 MB.";
+      return "File is too large.";
     }
     return "";
   }
@@ -529,6 +529,16 @@
       };
       image.src = url;
     });
+  }
+
+  function dataUrlToFile(dataUrl, name) {
+    const parts = dataUrl.split(",");
+    const binary = atob(parts[1] || "");
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return new File([bytes], name, { type: "image/jpeg" });
   }
 
   function showPackPicture(file) {
@@ -616,20 +626,8 @@
         submitNote.textContent = "Drag a pack picture first.";
         return;
       }
-      if (picture && picture.size > MAX_BYTES) {
-        submitNote.hidden = false;
-        submitNote.textContent = "Picture must be under 8 MB.";
-        return;
-      }
       submitNote.hidden = false;
       submitNote.textContent = "Publishing…";
-      const files = [file];
-      let imageName = "";
-      if (picture) {
-        const ext = (picture.name.split(".").pop() || "png").toLowerCase();
-        imageName = "pack-preview." + ext;
-        files.push(new File([picture], imageName, { type: picture.type }));
-      }
       const post = {
         id: String(Date.now()),
         title: title,
@@ -642,6 +640,12 @@
       previewReady.then(function (preview) {
         if (preview) {
           post.preview = preview;
+        }
+        const files = [file];
+        let imageName = "";
+        if (preview) {
+          imageName = "pack-preview.jpg";
+          files.push(dataUrlToFile(preview, imageName));
         }
         return sendWebhook({
           title: title,
