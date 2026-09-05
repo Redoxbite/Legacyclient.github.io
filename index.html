@@ -18,7 +18,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,600;1,700;1,800;1,900&family=Inter:ital,wght@0,400;0,500;0,600;1,700&display=swap" rel="stylesheet">
   <meta http-equiv="Cache-Control" content="no-store">
-  <link rel="stylesheet" href="css/board.css">
+  <link rel="stylesheet" href="css/board.css?v=desk2">
 </head>
 <body>
   <a class="skip-link" href="#home">Skip to content</a>
@@ -177,6 +177,28 @@
         </div>
       </section>
     </div>
+
+    <section class="desk-page" id="postPage" hidden>
+      <div class="container">
+        <button class="desk__back" type="button" id="postViewClose">
+          <span aria-hidden="true">&larr;</span>
+          <span id="postViewCategory">Texture packs</span>
+        </button>
+        <div class="desk__grid">
+          <button class="desk__media" type="button" id="postViewMedia">
+            <img class="desk__picture" id="postViewPicture" alt="">
+            <span class="desk__hint" id="postViewHint">Click to enlarge</span>
+          </button>
+          <div class="desk__side">
+            <h2 class="desk__title" id="postViewTitle">Pack</h2>
+            <p class="desk__copy" id="postViewCopy"></p>
+            <p class="desk__label">Downloads</p>
+            <div class="desk__files" id="postViewDownloads"></div>
+            <p class="desk__time" id="postViewTime"></p>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer class="site-footer">
@@ -206,16 +228,52 @@
     <p class="contact__note" id="authNote" hidden></p>
   </dialog>
 
-  <dialog class="post-view" id="postDialog" aria-labelledby="postViewTitle">
-    <button class="auth__close" type="button" id="postViewClose" aria-label="Close">&times;</button>
-    <img class="post-view__picture" id="postViewPicture" alt="">
-    <p class="section__label" id="postViewCategory">Texture packs</p>
-    <h2 class="post-view__title" id="postViewTitle">Pack</h2>
-    <p class="post-view__copy" id="postViewCopy"></p>
-    <button class="btn btn--primary btn--full" type="button" id="postViewDownload">Download</button>
+  <dialog class="zoom" id="zoomDialog" aria-label="Enlarged picture">
+    <button class="auth__close" type="button" id="zoomClose" aria-label="Close">&times;</button>
+    <img class="zoom__picture" id="zoomPicture" alt="">
+  </dialog>
+
+  <div class="ctx" id="postMenu" hidden role="menu" aria-label="Post actions">
+    <button class="ctx__item" type="button" role="menuitem" data-post-action="edit">Edit</button>
+    <button class="ctx__item ctx__item--danger" type="button" role="menuitem" data-post-action="remove">Remove</button>
+  </div>
+
+  <dialog class="post-view" id="editDialog" aria-labelledby="editHeading">
+    <button class="auth__close" type="button" id="editClose" aria-label="Close">&times;</button>
+    <p class="section__label">Owner</p>
+    <h2 class="post-view__title" id="editHeading">Edit</h2>
+    <p class="post-view__copy">Change this post. Leave file or picture empty to keep what is already published.</p>
+    <form class="submit-form" id="editForm">
+      <label class="visually-hidden" for="editTitle">Title</label>
+      <input class="contact__field" id="editTitle" name="title" type="text" placeholder="Title" required maxlength="80">
+      <label class="visually-hidden" for="editCategory">Category</label>
+      <select class="contact__field" id="editCategory" name="category" required>
+        <option value="scammers">Scammers</option>
+        <option value="packs">Texture packs</option>
+        <option value="other">Other</option>
+      </select>
+      <label class="visually-hidden" for="editDesc">Description</label>
+      <textarea class="contact__field" id="editDesc" name="description" rows="4" placeholder="Description" required maxlength="1200"></textarea>
+      <label class="file-field">
+        <span>Replace file (optional)</span>
+        <input id="editFile" name="file" type="file">
+      </label>
+      <label class="file-field">
+        <span>Add more files</span>
+        <input id="editExtra" name="extra" type="file" multiple>
+      </label>
+      <label class="dropzone" id="editPackPreview" hidden>
+        <input class="dropzone__input" id="editPreview" type="file" accept="image/*">
+        <span class="dropzone__label">Pack picture</span>
+        <span class="dropzone__hint">Drag a new picture, or click to choose</span>
+        <img class="dropzone__image" id="editPreviewImg" alt="" hidden>
+      </label>
+      <button class="btn btn--primary" type="submit">Save</button>
+      <p class="contact__note" id="editNote" hidden></p>
+    </form>
   </dialog>
 
   <script src="js/config.js"></script>
-  <script src="js/board.js"></script>
+  <script src="js/board.js?v=desk2"></script>
 </body>
 </html>
