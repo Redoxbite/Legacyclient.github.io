@@ -18,9 +18,16 @@
     custom: "Custom packs"
   };
   const DEFAULT_COVER = "assets/default-cover.svg";
+  const MODEL_COVERS = [
+    { match: /deep\s*seek/, src: "assets/deepseek-cover.png" },
+    { match: /opus/, src: "assets/opus-cover.png" },
+    { match: /sonnet/, src: "assets/sonnet-cover.png" },
+    { match: /haiku|claude|anthropic/, src: "assets/opus-cover.png" }
+  ];
   let activePost = null;
   let openingPost = false;
   let pendingDownload = null;
+  let downloadPersist = Promise.resolve();
 
   function net(url, opts) {
     const method = String((opts && opts.method) || "GET").toUpperCase();
@@ -186,14 +193,28 @@
     return window.LEGACY_CLOUD || null;
   }
 
+  function modelCover(post) {
+    const title = String((post && post.title) || "").toLowerCase();
+    for (let i = 0; i < MODEL_COVERS.length; i++) {
+      if (MODEL_COVERS[i].match.test(title)) {
+        return MODEL_COVERS[i].src;
+      }
+    }
+    return "";
+  }
+
+  function fallbackCover(post) {
+    return modelCover(post) || DEFAULT_COVER;
+  }
+
   function previewSrc(post) {
     const preview = post && post.preview;
     if (!preview) {
-      return DEFAULT_COVER;
+      return fallbackCover(post);
     }
     const api = cloud();
     if (api && api.isBoardPreview && api.isBoardPreview(preview)) {
-      return DEFAULT_COVER;
+      return fallbackCover(post);
     }
     if (preview.indexOf("data:") === 0 || preview.indexOf("blob:") === 0 ||
         preview.indexOf("http") === 0 || preview.indexOf("assets/") === 0) {
@@ -217,7 +238,7 @@
           if (src) {
             img.src = src;
           } else {
-            img.src = DEFAULT_COVER;
+            img.src = fallbackCover(post);
           }
         });
       }
@@ -519,9 +540,11 @@
   }
 
   function totalDownloads(post) {
-    return postFiles(post).reduce(function (sum, entry) {
+    const fromFiles = postFiles(post).reduce(function (sum, entry) {
       return sum + (Number(entry.downloads) || 0);
     }, 0);
+    const top = Number(post && post.downloads) || 0;
+    return Math.max(fromFiles, top);
   }
 
   function formatSize(bytes) {
@@ -923,9 +946,13 @@
     const picture = document.createElement("img");
     picture.className = "post-card__picture";
     fillPreview(picture, post);
-    picture.alt = "";
+    picture.alt = post.title || "";
     picture.addEventListener("error", function () {
-      if (picture.getAttribute("src") !== DEFAULT_COVER) {
+      const fallback = fallbackCover(post);
+      const current = picture.getAttribute("src") || "";
+      if (current !== fallback) {
+        picture.src = fallback;
+      } else if (current !== DEFAULT_COVER) {
         picture.src = DEFAULT_COVER;
       }
     });
@@ -934,12 +961,9 @@
     chip.textContent = postChipLabel(post);
     media.append(picture, chip);
     media.addEventListener("click", function (event) {
-      if (!post.preview) {
-        return;
-      }
       event.preventDefault();
       event.stopPropagation();
-      openZoom(post);
+      openPost(post);
     });
     const foot = document.createElement("div");
     foot.className = "post-card__foot";
@@ -950,10 +974,35 @@
     time.className = "post-card__time";
     time.textContent = timeAgo(post.createdAt);
     foot.append(title, time);
-    if (postFiles(post).length) {
-      const stat = document.createElement("span");
-      stat.className = "post-card__stat";
-      stat.append(svgNode("M12 4v12m0 0l-4-4m4 4l4-4M5 19h14"), document.createTextNode(String(totalDownloads(post))));
+    const files = postFiles(post);
+    if (files.length) {
+      const locked = packNeedsLogin(post);
+      const stat = document.createElement("button");
+      stat.className = locked ? "post-card__stat post-card__stat--lock" : "post-card__stat";
+      stat.type = "button";
+      stat.setAttribute("aria-label", locked
+        ? "Log in to download " + (files[0].name || "file")
+        : "Download " + (files[0].name || "file"));
+      stat.append(
+        svgNode(locked
+          ? "M8 10V7a4 4 0 118 0v3M6 10h12v11H6z"
+          : "M12 4v12m0 0l-4-4m4 4l4-4M5 19h14"),
+        document.createTextNode(String(totalDownloads(post)))
+      );
+      stat.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        const entry = files[0];
+        if (locked) {
+          pendingDownload = {
+            postId: post.id,
+            fileId: entry.id
+          };
+          openAuth("download");
+          return;
+        }
+        downloadPostFile(post, entry, null);
+      });
       foot.append(stat);
     }
     article.append(media, foot);
@@ -997,7 +1046,11 @@
 
   if (postViewPicture) {
     postViewPicture.addEventListener("error", function () {
-      if (postViewPicture.getAttribute("src") !== DEFAULT_COVER) {
+      const fallback = fallbackCover(activePost);
+      const current = postViewPicture.getAttribute("src") || "";
+      if (current !== fallback) {
+        postViewPicture.src = fallback;
+      } else if (current !== DEFAULT_COVER) {
         postViewPicture.src = DEFAULT_COVER;
       }
     });
@@ -1047,9 +1100,9 @@
     return parts.join(" · ");
   }
 
-  function bumpDownloads(post, fileId) {
-    const posts = readPosts().map(function (entry) {
-      if (entry.id !== post.id) {
+  function withBumpedDownloads(posts, postId, fileId) {
+    return posts.map(function (entry) {
+      if (entry.id !== postId) {
         return entry;
       }
       const files = postFiles(entry).map(function (item) {
@@ -1058,20 +1111,95 @@
         }
         return Object.assign({}, item, { downloads: (Number(item.downloads) || 0) + 1 });
       });
-      const next = Object.assign({}, entry, {
+      return Object.assign({}, entry, {
         files: files,
         downloads: files.reduce(function (sum, item) {
           return sum + (Number(item.downloads) || 0);
         }, 0)
       });
-      activePost = next;
-      return next;
     });
-    savePosts(posts);
+  }
+
+  function postById(posts, postId) {
+    return posts.filter(function (entry) {
+      return entry.id === postId;
+    })[0] || null;
+  }
+
+  function showBumpedPost(posts, postId, writeLocal) {
+    remotePosts = posts;
+    remoteReady = true;
+    const bumped = postById(posts, postId);
+    if (bumped && activePost && activePost.id === postId) {
+      activePost = bumped;
+    }
+    if (writeLocal) {
+      savePosts(posts);
+    }
     renderPosts();
     if (activePost && postPage && !postPage.hidden) {
       fillDownloadRows(activePost);
     }
+  }
+
+  function mergeDownloadCount(posts, saved) {
+    if (!saved) {
+      return posts;
+    }
+    return posts.map(function (entry) {
+      if (entry.id !== saved.id) {
+        return entry;
+      }
+      const savedFiles = saved.files || [];
+      const files = postFiles(entry).map(function (item) {
+        const match = savedFiles.filter(function (file) {
+          return file.id === item.id;
+        })[0];
+        if (!match) {
+          return item;
+        }
+        return Object.assign({}, item, {
+          downloads: Math.max(Number(item.downloads) || 0, Number(match.downloads) || 0)
+        });
+      });
+      const fromFiles = files.reduce(function (sum, item) {
+        return sum + (Number(item.downloads) || 0);
+      }, 0);
+      return Object.assign({}, entry, {
+        files: files,
+        downloads: Math.max(Number(entry.downloads) || 0, Number(saved.downloads) || 0, fromFiles)
+      });
+    });
+  }
+
+  function persistDownloadBump(postId, fileId) {
+    const api = cloud();
+    if (!api || !api.loadPosts || !api.savePosts || !api.canPublish()) {
+      return;
+    }
+    downloadPersist = downloadPersist.then(function () {
+      return api.loadPosts(true).then(function (list) {
+        const next = withBumpedDownloads(list, postId, fileId);
+        return api.savePosts(next, "Count download", { boardOnly: true }).then(function () {
+          const saved = postById(next, postId);
+          remotePosts = mergeDownloadCount(remotePosts, saved);
+          if (saved && activePost && activePost.id === postId) {
+            activePost = postById(remotePosts, postId) || saved;
+          }
+          renderPosts();
+          if (activePost && postPage && !postPage.hidden) {
+            fillDownloadRows(activePost);
+          }
+        });
+      });
+    }).catch(function () {
+      return null;
+    });
+  }
+
+  function bumpDownloads(post, fileId) {
+    showBumpedPost(withBumpedDownloads(readPosts(), post.id, fileId), post.id, true);
+    persistDownloadBump(post.id, fileId);
   }
 
   function fillDownloadRows(post) {
@@ -1101,6 +1229,9 @@
       meta.textContent = fileMetaLine(entry);
       body.append(name, meta);
       const locked = packNeedsLogin(post);
+      if (locked) {
+        row.classList.add("dl--lock");
+      }
       const button = document.createElement("button");
       button.className = locked ? "dl__btn dl__btn--lock" : "dl__btn";
       button.type = "button";
@@ -1113,9 +1244,17 @@
       if (locked) {
         meta.textContent = "Log in to download";
       }
-      button.addEventListener("click", function () {
+      function requestFile() {
         downloadPostFile(post, entry, meta);
+      }
+      button.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        requestFile();
       });
+      if (locked) {
+        row.addEventListener("click", requestFile);
+      }
       row.append(icon, body, button);
       postViewDownloads.append(row);
       loadPostFile(fileKey(post.id, entry.id)).then(function (record) {

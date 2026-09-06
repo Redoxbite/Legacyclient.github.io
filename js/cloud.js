@@ -183,8 +183,8 @@
     });
   }
 
-  function loadPosts() {
-    if (loadPostsJob) {
+  function loadPosts(fresh) {
+    if (!fresh && loadPostsJob) {
       return loadPostsJob;
     }
     const job = Promise.all([
@@ -234,7 +234,8 @@
     return putFile(POSTS_PATH, base64, message || "Update board posts");
   }
 
-  function savePosts(posts, message) {
+  function savePosts(posts, message, opts) {
+    const boardOnly = Boolean(opts && opts.boardOnly);
     const jobs = [];
     if (BOARD_URL && BOARD_KEY) {
       jobs.push(net(BOARD_URL, {
@@ -251,7 +252,7 @@
         return res.json();
       }));
     }
-    if (hasToken()) {
+    if (hasToken() && !boardOnly) {
       jobs.push(saveGithubPosts(posts, message).catch(function () {
         return null;
       }));

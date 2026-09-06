@@ -667,7 +667,12 @@ main {
   position: relative;
   aspect-ratio: var(--shot-ratio);
   background: var(--tile-media);
-  cursor: zoom-in;
+  cursor: pointer;
+}
+
+.post-card__picture,
+.post-card__chip {
+  pointer-events: none;
 }
 
 .post-card__picture {
@@ -676,7 +681,8 @@ main {
   object-fit: cover;
 }
 
-.post-card__picture[src$="default-cover.svg"] {
+.post-card__picture[src$="default-cover.svg"],
+.post-card__picture[src$="-cover.png"] {
   object-fit: cover;
   background: #07080b;
 }
@@ -690,6 +696,13 @@ main {
   height: auto;
   max-height: 32rem;
   object-fit: contain;
+}
+
+.post-card--shot .post-card__picture[src$="-cover.png"],
+.post-card--shot .post-card__picture[src$="default-cover.svg"] {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
 }
 
 .post-card__chip {
@@ -731,15 +744,34 @@ main {
   align-items: center;
   gap: 0.35rem;
   padding: 0.35rem 0.7rem;
+  appearance: none;
+  border: 0;
   border-radius: 999px;
   background: var(--icon-bg);
   color: var(--text-secondary);
+  font-family: inherit;
   font-size: var(--text-xs);
+  cursor: pointer;
+  transition: background-color var(--speed) var(--ease), color var(--speed) var(--ease);
 }
 
 .post-card__stat svg {
   width: 0.85rem;
   height: 0.85rem;
+}
+
+.post-card__stat:hover,
+.post-card__stat:focus-visible {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.post-card__stat:active {
+  transform: scale(0.97);
+}
+
+.post-card__stat--lock {
+  color: var(--muted);
 }
 
 .cat-card h3 {
@@ -1320,6 +1352,15 @@ body.is-shielded {
   padding: 0.8rem 0.9rem;
   border-radius: 0.85rem;
   background: var(--dl-bg);
+}
+
+.dl--lock {
+  cursor: pointer;
+}
+
+.dl--lock:hover,
+.dl--lock:focus-visible {
+  background: var(--icon-bg);
 }
 
 .dl__icon {
